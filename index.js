@@ -1,15 +1,18 @@
 const dotenv = require('dotenv');
 dotenv.load();
 const express = require('express');
+const db = require('./db');
 const app = express();
 const https = require('https');
 const fs = require('fs');
 const cors = require('cors');
 const request = require('request');
 const port = 9000;
+const OrderModel = require('./models/OrderModel');
 
 app.use(express.json());
 app.use(cors());
+app.locals.db = db;
 
 app.get('/', (req, res) => {
     res.send('WORKING!')
@@ -89,6 +92,9 @@ app.post('/google_pay/orders', (req, res) => {
         return res.send(403);
     }
 
+    const extOrderId = req.app.locals.db.Types.ObjectId().toString();
+    const customerIp = req.ip;
+
     const options = {
         url: `${process.env.PAYU_API}/orders`,
         headers: {
@@ -96,6 +102,7 @@ app.post('/google_pay/orders', (req, res) => {
             'Authorization': `Bearer ${accessToken}`,
         },
         body: JSON.stringify({
+            extOrderId,
             payMethods: {
                 payMethod: {
                     value: "ap",
@@ -104,7 +111,7 @@ app.post('/google_pay/orders', (req, res) => {
                 }
             },
             notifyUrl: notifyUrl,
-            customerIp: req.ip,
+            customerIp,
             merchantPosId: merchantPosId,
             description: description,
             currencyCode: currencyCode,
@@ -115,18 +122,49 @@ app.post('/google_pay/orders', (req, res) => {
         }),
     };
 
-    function callback(error, response, body) {
-        if (!error) {
-            const jsonParsedBody = JSON.parse(body);
-            jsonParsedBody.originalStatusCode = response.statusCode;
-            jsonParsedBody.originalStatusMessage = response.statusMessage;
-            jsonParsedBody.originalCompleted = response.complete;
+    let orderDoc;
 
-            res.json(JSON.parse(body));
+    const callback = (error, response, body) => {
+        if (error) {
+            throw error;
         }
-    }
+        const json = JSON.parse(body);
+        json.originalStatusCode = response.statusCode;
+        json.originalStatusMessage = response.statusMessage;
+        json.originalCompleted = response.complete;
 
-    request.post(options, callback);
+        // TODO: Update order with payu info
+        orderDoc.set({
+            payuOrderId: json.orderId,
+            payuRedirectUri: json.redirectUri,
+            payuStatusSeverity: json.status.severity,
+            payuStatusCode: json.status.statusCode,
+        });
+        orderDoc.save(function(error, updatedOrder) {
+            if (error) {
+                throw error;
+            }
+            res.json(updatedOrder);
+        });
+    };
+
+    const Order = new OrderModel({
+        extOrderId,
+        totalAmount,
+        customerIp,
+        description,
+        buyer,
+        currencyCode,
+        products,
+    });
+
+    Order.save(function (error, order) {
+        if (error) {
+            throw error;
+        }
+        orderDoc = order;
+        request.post(options, callback);
+    });
 });
 
 const httpsOptions = {
