@@ -28,7 +28,7 @@ app.post('/authorize', (req, res) => {
     const clientSecret = client_secret.toString().trim();
 
     const options = {
-        url: 'https://secure.snd.payu.com/pl/standard/user/oauth/authorize',
+        url: `${process.env.PAYU_HOST}/pl/standard/user/oauth/authorize`,
         body: `grant_type=client_credentials&client_id=${clientId}&client_secret=${clientSecret}`,
         headers: {
             'Content-Type': 'application/x-www-form-urlencoded',
@@ -53,7 +53,6 @@ app.post('/google_pay/orders', (req, res) => {
         notifyUrl,
         merchantPosId,
         description,
-        customerIp,
         currencyCode,
         totalAmount,
         buyer,
@@ -75,9 +74,6 @@ app.post('/google_pay/orders', (req, res) => {
     if (typeof description !== 'string') {
         return res.send(403);
     }
-    if (typeof customerIp !== 'string') {
-        return res.send(403);
-    }
     if (typeof currencyCode !== 'string') {
         return res.send(403);
     }
@@ -95,7 +91,7 @@ app.post('/google_pay/orders', (req, res) => {
     }
 
     const options = {
-        url: 'https://secure.snd.payu.com/api/v2_1/orders',
+        url: `${process.env.PAYU_API}/orders`,
         headers: {
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${accessToken}`,
@@ -109,7 +105,7 @@ app.post('/google_pay/orders', (req, res) => {
                 }
             },
             notifyUrl: notifyUrl,
-            customerIp: customerIp,
+            customerIp: req.ip,
             merchantPosId: merchantPosId,
             description: description,
             currencyCode: currencyCode,
@@ -121,7 +117,6 @@ app.post('/google_pay/orders', (req, res) => {
     };
 
     function callback(error, response, body) {
-        console.log(error, response, body);
         if (!error) {
             const jsonParsedBody = JSON.parse(body);
             jsonParsedBody.originalStatusCode = response.statusCode;
