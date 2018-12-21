@@ -36,7 +36,6 @@ app.post('/authorize', (req, res) => {
     };
 
     function callback(error, response, body) {
-        console.log(error, response, body);
         if (!error) {
             res.json(JSON.parse(body));
         }
