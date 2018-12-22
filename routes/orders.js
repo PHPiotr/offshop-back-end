@@ -171,4 +171,34 @@ router.get('/:extOrderId', (req, res) => {
     });
 });
 
+// TransactionRetrieveRequest
+router.get('/:orderId/transactions', (req, res) => {
+    const accessToken = req.headers.authorization;
+    if (typeof accessToken !== 'string') {
+        return res.send(403);
+    }
+
+    const { orderId } = req.params;
+    if (typeof orderId !== 'string' || !orderId.trim()) {
+        return res.send(403);
+    }
+
+    const options = {
+        url: `${process.env.PAYU_API}/orders/${orderId}/transactions`,
+        headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `${accessToken}`,
+        },
+    };
+
+    const callback = (err, response, body) => {
+        if (err) {
+            throw err;
+        }
+        res.json(JSON.parse(body));
+    };
+
+    request.get(options, callback);
+});
+
 module.exports = router;
