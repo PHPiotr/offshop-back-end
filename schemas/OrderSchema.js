@@ -14,10 +14,9 @@ const OrderSchema = new Schema({
     },
     currencyCode: String,
     products: [ProductSchema],
-    payuOrderId: String,
-    payuRedirectUri: String,
-    payuStatusSeverity: String,
-    payuStatusCode: String,
+    orderId: String,
+    redirectUri: String,
+    statusCode: String,
 }, {
     timestamps: true,
 });
