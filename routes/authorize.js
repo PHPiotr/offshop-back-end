@@ -3,14 +3,16 @@ const router = express.Router();
 const request = require('request');
 
 // OAuth Authorization
-router.post('/', (req, res) => {
+router.post('/', (req, res, next) => {
 
     const {client_id, client_secret} = req.body;
-    if (typeof client_id !== 'string') {
-        return res.status(403).json('Problem with client id');
+    if (typeof client_id !== 'string' || !client_id.trim()) {
+        res.status(403);
+        return next(Error('Invalid client id'));
     }
     if (typeof client_secret !== 'string') {
-        return res.status(403).json('Problem with client secret');
+        res.status(403);
+        return next(Error('Invalid client secret'));
     }
     const clientId = parseInt(client_id, 10);
     const clientSecret = client_secret.toString().trim();
@@ -23,14 +25,15 @@ router.post('/', (req, res) => {
         }
     };
 
-    function callback(error, response, body) {
-        if (error) {
-            return res.json({error});
+    function callback(err, response, body) {
+        if (err) {
+            return next(err);
         }
         const {statusCode, statusMessage} = response;
         switch (response.statusCode) {
             case 503:
-                return res.status(statusCode).json({error: statusMessage});
+                res.status(statusCode);
+                return next(Error(statusMessage));
             default:
                 res.json(JSON.parse(body));
         }

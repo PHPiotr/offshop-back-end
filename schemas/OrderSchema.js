@@ -17,6 +17,10 @@ const OrderSchema = new Schema({
     orderId: String,
     redirectUri: String,
     statusCode: String,
+    properties: {
+        type: Map,
+        of: String,
+    }
 }, {
     timestamps: true,
 });

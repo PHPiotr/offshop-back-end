@@ -1,15 +1,17 @@
-const dotenv = require('dotenv');
-dotenv.load();
+if (process.env.NODE_ENV !== 'production') {
+    const dotenv = require('dotenv');
+    dotenv.load();
+}
 const express = require('express');
 const db = require('./db');
 const app = express();
 const https = require('https');
 const fs = require('fs');
 const cors = require('cors');
-const request = require('request');
 const authorize = require('./routes/authorize');
 const orders = require('./routes/orders');
-const port = 9000;
+const errorHandler = require('./routes/errorHandler');
+const port = process.env.PORT || 8080;
 
 app.use(express.json());
 app.use(cors());
@@ -17,9 +19,12 @@ app.locals.db = db;
 app.use('/authorize', authorize);
 app.use('/orders', orders);
 
-app.get('/', (req, res) => {
-    res.send('WORKING!')
+app.all('*', (req, res, next) => {
+    res.status(404);
+    next(Error('Not found'));
 });
+
+app.use(errorHandler);
 
 const httpsOptions = {
     key: fs.readFileSync(process.env.SSL_KEY),
