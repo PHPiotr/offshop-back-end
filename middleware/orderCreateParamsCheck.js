@@ -25,6 +25,14 @@ module.exports = (req, res, next) => {
         res.status(401);
         return next(Error('Invalid total amount'));
     }
+    if (typeof body.notifyUrl !== 'string') {
+        res.status(401);
+        return next(Error('Invalid notify url'));
+    }
+    if (typeof body.continueUrl !== 'string') {
+        res.status(401);
+        return next(Error('Invalid continue url'));
+    }
 
     // TODO: Validate props of objects below
     const buyer = body.buyer || {};

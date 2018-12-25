@@ -17,6 +17,8 @@ router.post('/', accessTokenCheck, orderCreateParamsCheck, (req, res, next) => {
         buyer,
         settings,
         products,
+        continueUrl,
+        notifyUrl,
     } = req.body;
     const extOrderId = req.app.locals.db.Types.ObjectId().toString();
     const customerIp = req.ip;
@@ -36,8 +38,8 @@ router.post('/', accessTokenCheck, orderCreateParamsCheck, (req, res, next) => {
                     authorizationCode,
                 }
             },
-            notifyUrl: 'https://localhost:3000',
-            continueUrl: `https://localhost:3000/checkout`,
+            notifyUrl,
+            continueUrl,
             customerIp,
             merchantPosId,
             description,
