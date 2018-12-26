@@ -16,7 +16,7 @@ const OrderSchema = new Schema({
     products: [ProductSchema],
     orderId: String,
     redirectUri: String,
-    statusCode: String,
+    status: String,
     properties: {
         type: Map,
         of: String,

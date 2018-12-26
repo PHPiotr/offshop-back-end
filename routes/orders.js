@@ -5,11 +5,14 @@ const accessTokenCheck = require('../middleware/accessTokenCheck');
 const orderCreateParamsCheck = require('../middleware/orderCreateParamsCheck');
 const OrderModel = require('../models/OrderModel');
 
+const MAX_RETRIEVE_ORDER_RETRIES = 3;
+const PENDING = 'PENDING';
+
 // OrderCreateRequest
 router.post('/', accessTokenCheck, orderCreateParamsCheck, (req, res, next) => {
 
     const {
-        authorizationCode,
+        payMethods,
         merchantPosId,
         description,
         currencyCode,
@@ -31,13 +34,7 @@ router.post('/', accessTokenCheck, orderCreateParamsCheck, (req, res, next) => {
         },
         body: JSON.stringify({
             extOrderId,
-            payMethods: {
-                payMethod: {
-                    value: "ap",
-                    type: "PBL",
-                    authorizationCode,
-                }
-            },
+            payMethods,
             notifyUrl,
             continueUrl,
             customerIp,
@@ -58,8 +55,8 @@ router.post('/', accessTokenCheck, orderCreateParamsCheck, (req, res, next) => {
             return next(err);
         }
         const json = JSON.parse(body);
-        const {orderId, redirectUri, status: {statusCode}} = json;
-        orderDoc.set({orderId, redirectUri, statusCode});
+        const {orderId, redirectUri} = json;
+        orderDoc.set({orderId, redirectUri});
         orderDoc.save(function (err, updatedOrder) {
             if (err) {
                 return next(err);
@@ -97,6 +94,8 @@ router.get('/:extOrderId', accessTokenCheck, (req, res, next) => {
     }
 
     let orderDoc;
+    let alreadyRetriedTimes = 0;
+    let requestOptions;
 
     const callback = (err, response, body) => {
         if (err) {
@@ -109,20 +108,21 @@ router.get('/:extOrderId', accessTokenCheck, (req, res, next) => {
         }
 
         const json = JSON.parse(body);
+        const status = json.orders[0].status;
+        if (status === PENDING && MAX_RETRIEVE_ORDER_RETRIES > alreadyRetriedTimes) {
+            alreadyRetriedTimes++;
+            return request.get(requestOptions, callback);
+        }
+        if (orderDoc.status === status) {
+            return res.json(orderDoc);
+        }
+
         const properties = (json.properties || []).reduce((acc, {name, value}) => {
             acc[name] = value;
             return acc;
         }, {});
 
-        const statusCode = json.orders[0].status;
-        if (orderDoc.statusCode === statusCode) {
-            return res.json(orderDoc);
-        }
-
-        orderDoc.set({
-            statusCode,
-            properties,
-        });
+        orderDoc.set({status, properties});
         orderDoc.save(function (err, updatedOrder) {
             if (err) {
                 return next(err);
@@ -137,7 +137,7 @@ router.get('/:extOrderId', accessTokenCheck, (req, res, next) => {
         }
         orderDoc = order;
 
-        const options = {
+        requestOptions = {
             url: `${process.env.PAYU_API}/orders/${orderDoc.orderId}`,
             headers: {
                 'Content-Type': 'application/json',
@@ -145,7 +145,7 @@ router.get('/:extOrderId', accessTokenCheck, (req, res, next) => {
             },
         };
 
-        request.get(options, callback);
+        request.get(requestOptions, callback);
     });
 });
 
