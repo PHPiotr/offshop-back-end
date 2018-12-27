@@ -10,6 +10,8 @@ const fs = require('fs');
 const cors = require('cors');
 const authorize = require('./routes/authorize');
 const orders = require('./routes/orders');
+const categories = require('./routes/categories');
+const products = require('./routes/products');
 const errorHandler = require('./routes/errorHandler');
 const port = process.env.PORT || 8080;
 
@@ -18,6 +20,8 @@ app.use(cors());
 app.locals.db = db;
 app.use('/authorize', authorize);
 app.use('/orders', orders);
+app.use('/categories', categories);
+app.use('/products', products);
 
 app.all('*', (req, res, next) => {
     res.status(404);
