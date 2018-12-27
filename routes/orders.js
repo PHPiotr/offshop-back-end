@@ -5,7 +5,7 @@ const accessTokenCheck = require('../middleware/accessTokenCheck');
 const orderCreateParamsCheck = require('../middleware/orderCreateParamsCheck');
 const OrderModel = require('../models/OrderModel');
 
-const MAX_RETRIEVE_ORDER_RETRIES = 3;
+const MAX_RETRIEVE_ORDER_RETRIES = 10;
 const PENDING = 'PENDING';
 
 // OrderCreateRequest
@@ -111,8 +111,11 @@ router.get('/:extOrderId', accessTokenCheck, (req, res, next) => {
         const status = json.orders[0].status;
         if (status === PENDING && MAX_RETRIEVE_ORDER_RETRIES > alreadyRetriedTimes) {
             alreadyRetriedTimes++;
-            return request.get(requestOptions, callback);
+            return setTimeout(function() {
+                request.get(requestOptions, callback);
+            }, 300);
         }
+        console.log('retried times: ', alreadyRetriedTimes);
         if (orderDoc.status === status) {
             return res.json(orderDoc);
         }
