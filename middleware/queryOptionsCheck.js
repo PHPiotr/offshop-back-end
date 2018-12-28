@@ -13,27 +13,31 @@ const defaultOptions = {
     skip: DEFAULT_SKIP,
 };
 
-module.exports = (req, res, next) => {
-    const {sort, order, limit, skip} = req.query;
-    const integerPattern = /\d+/;
-    const options = {};
-    let orderBy = DEFAULT_SORT;
-    let direction = DEFAULT_ORDER;
-    if (typeof sort === 'string') {
-        orderBy = sort;
-    }
-    if (ascendingValues.indexOf(order) !== -1) {
-        direction = 1;
-    }
-    options.sort = {
-        [orderBy]: direction,
-    };
-    if (integerPattern.test(limit)) {
-        options.limit = parseInt(limit, 10);
-    }
-    if (integerPattern.test(skip)) {
-        options.skip = parseInt(skip, 10);
-    }
-    req.query.validQueryOptions = Object.assign({}, defaultOptions, options);
-    next();
+module.exports = (model) => {
+
+  return (req, res, next) => {
+
+      const {sort, order, limit, skip} = req.query;
+      const integerPattern = /\d+/;
+      const options = {};
+      let orderBy = DEFAULT_SORT;
+      let direction = DEFAULT_ORDER;
+      if (Object.keys(model.schema.paths).indexOf(sort) !== -1) {
+          orderBy = sort;
+      }
+      if (ascendingValues.indexOf(order) !== -1) {
+          direction = 1;
+      }
+      options.sort = {
+          [orderBy]: direction,
+      };
+      if (integerPattern.test(limit)) {
+          options.limit = parseInt(limit, 10);
+      }
+      if (integerPattern.test(skip)) {
+          options.skip = parseInt(skip, 10);
+      }
+      req.query.validQueryOptions = Object.assign({}, defaultOptions, options);
+      next();
+  }
 };

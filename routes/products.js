@@ -3,7 +3,7 @@ const router = express.Router();
 const ProductModel = require('../models/ProductModel');
 const queryOptionsCheck = require('../middleware/queryOptionsCheck');
 
-router.get('/', queryOptionsCheck, async (req, res, next) => {
+router.get('/', queryOptionsCheck(ProductModel), async (req, res, next) => {
     try {
         const projection = null;
         const query = ProductModel.find({ active: true }, projection, req.query.validQueryOptions);
