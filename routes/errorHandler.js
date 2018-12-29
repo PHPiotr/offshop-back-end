@@ -3,7 +3,7 @@ module.exports = (err, req, res, next) => {
         return next();
     }
     res.json({
-        errorMessage: err.message || res.errorMessage || 'Panic',
+        errorMessage: err.message || res.errorMessage || "Don't panic!",
         errorCode: err.statusCode || res.statusCode || 500,
     });
 };

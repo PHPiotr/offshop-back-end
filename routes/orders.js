@@ -55,33 +55,33 @@ router.post('/', accessTokenCheck, orderCreateParamsCheck, (req, res, next) => {
             return next(err);
         }
         const json = JSON.parse(body);
+        if (response.statusCode >= 400) {
+            res.status(response.statusCode);
+            console.error(json);
+            return next(Error(`Problem po stronie systemu płatności PayU (${response.statusCode} ${response.statusMessage})`));
+        }
         const {orderId, redirectUri} = json;
-        orderDoc.set({orderId, redirectUri});
-        orderDoc.save(function (err, updatedOrder) {
+
+        const Order = new OrderModel({
+            orderId,
+            extOrderId,
+            totalAmount,
+            customerIp,
+            description,
+            buyer,
+            currencyCode,
+            products,
+            redirectUri,
+        });
+        Order.save(function (err, order) {
             if (err) {
                 return next(err);
             }
-            res.json(updatedOrder);
+            res.json(order);
         });
     };
 
-    const Order = new OrderModel({
-        extOrderId,
-        totalAmount,
-        customerIp,
-        description,
-        buyer,
-        currencyCode,
-        products,
-    });
-
-    Order.save(function (err, order) {
-        if (err) {
-            return next(err);
-        }
-        orderDoc = order;
-        request.post(options, callback);
-    });
+    request.post(options, callback);
 });
 
 // OrderRetrieveRequest (and sync status if needed)
