@@ -12,6 +12,10 @@ const OrderSchema = new Schema({
         type: Map,
         of: String,
     },
+    buyerDelivery: {
+        type: Map,
+        of: String,
+    },
     currencyCode: String,
     products: [ProductSchema],
     orderId: String,

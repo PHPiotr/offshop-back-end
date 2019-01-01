@@ -18,6 +18,7 @@ router.post('/', accessTokenCheck, orderCreateParamsCheck, (req, res, next) => {
         currencyCode,
         totalAmount,
         buyer,
+        buyerDelivery,
         settings,
         products,
         continueUrl,
@@ -42,13 +43,11 @@ router.post('/', accessTokenCheck, orderCreateParamsCheck, (req, res, next) => {
             description,
             currencyCode,
             totalAmount,
-            buyer,
+            buyer: Object.assign({}, buyer, {'buyer.delivery': buyerDelivery}),
             settings,
             products,
         }),
     };
-
-    let orderDoc;
 
     const callback = (err, response, body) => {
         if (err) {
@@ -69,6 +68,7 @@ router.post('/', accessTokenCheck, orderCreateParamsCheck, (req, res, next) => {
             customerIp,
             description,
             buyer,
+            buyerDelivery,
             currencyCode,
             products,
             redirectUri,
