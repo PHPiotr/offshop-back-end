@@ -21,6 +21,7 @@ router.post('/', accessTokenCheck, orderCreateParamsCheck, (req, res, next) => {
         buyerDelivery,
         settings,
         products,
+        productsIds,
         continueUrl,
         notifyUrl,
     } = req.body;
@@ -71,6 +72,7 @@ router.post('/', accessTokenCheck, orderCreateParamsCheck, (req, res, next) => {
             buyerDelivery,
             currencyCode,
             products,
+            productsIds,
             redirectUri,
         });
         Order.save(function (err, order) {
