@@ -18,10 +18,6 @@ const ProductSchema = new Schema({
         type: Number,
         default: 0,
     },
-    inCart: {
-        type: Number,
-        default: 0,
-    },
     price: {
         type: Number,
         default: 0,
