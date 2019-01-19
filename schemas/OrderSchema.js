@@ -1,7 +1,6 @@
 const mongoose = require('mongoose');
 const Schema = mongoose.Schema
 const ObjectId = Schema.Types.ObjectId;
-const ProductSchema = require('./ProductSchema');
 
 const OrderSchema = new Schema({
     extOrderId: ObjectId,
@@ -18,7 +17,7 @@ const OrderSchema = new Schema({
     },
     currencyCode: String,
     productsIds: [ObjectId],
-    products: [],
+    products: [Object],
     orderId: String,
     redirectUri: String,
     status: String,
