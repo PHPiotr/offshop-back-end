@@ -4,6 +4,7 @@ const request = require('request');
 const accessTokenCheck = require('../middleware/accessTokenCheck');
 const orderCreateParamsCheck = require('../middleware/orderCreateParamsCheck');
 const OrderModel = require('../models/OrderModel');
+const ProductModel = require('../models/ProductModel');
 
 const MAX_RETRIEVE_ORDER_RETRIES = 10;
 const PENDING = 'PENDING';
@@ -46,7 +47,7 @@ router.post('/', accessTokenCheck, orderCreateParamsCheck, (req, res, next) => {
             totalAmount,
             buyer: Object.assign({}, buyer, {'buyer.delivery': buyerDelivery}),
             settings,
-            products,
+            products: productsIds.map(i => products[i]),
         }),
     };
 
@@ -79,6 +80,9 @@ router.post('/', accessTokenCheck, orderCreateParamsCheck, (req, res, next) => {
             if (err) {
                 return next(err);
             }
+            productsIds.forEach(_id => {
+                ProductModel.update({_id}, { $inc: { quantity: -(products[_id].quantity) } });
+            });
             res.json(order);
         });
     };
