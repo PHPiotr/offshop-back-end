@@ -13,7 +13,8 @@
   },
   "devDependencies": {
     "dotenv": "^6.2.0",
-    "nodemon": "^1.18.9"
+    "nodemon": "^1.18.9",
+    "serverless-offline": "^4.2.0"
   },
   "scripts": {
     "dev": "nodemon index",
