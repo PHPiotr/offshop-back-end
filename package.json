@@ -4,6 +4,7 @@
   "description": "",
   "main": "index.js",
   "dependencies": {
+    "aws-sdk": "^2.395.0",
     "cors": "^2.8.5",
     "express": "^4.16.4",
     "mongodb": "^3.1.10",
@@ -14,6 +15,7 @@
   "devDependencies": {
     "dotenv": "^6.2.0",
     "nodemon": "^1.18.9",
+    "serverless-dynamodb-local": "^0.2.36",
     "serverless-offline": "^4.2.0"
   },
   "scripts": {

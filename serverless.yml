@@ -139,4 +139,5 @@ resources:
 #       Value: "Some output value"
 
 plugins:
-  - serverless-offline
+  - serverless-dynamodb-local
+  - serverless-offline #serverless-offline needs to be last in the list
