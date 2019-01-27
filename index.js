@@ -7,6 +7,7 @@ const db = require('./db');
 const app = express();
 const https = require('https');
 const fs = require('fs');
+const path = require('path');
 const cors = require('cors');
 const authorize = require('./routes/authorize');
 const orders = require('./routes/orders');
@@ -15,6 +16,7 @@ const products = require('./routes/products');
 const errorHandler = require('./routes/errorHandler');
 const port = process.env.PORT || 8080;
 
+app.use(express.static(path.join(__dirname, 'public')));
 app.use(express.json());
 app.use(cors());
 app.locals.db = db;
