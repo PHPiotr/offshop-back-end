@@ -52,5 +52,5 @@ resources:
           ReadCapacityUnits: 1
           WriteCapacityUnits: 1
 plugins:
-  - serverless-offline
   - serverless-dynamodb-local
+  - serverless-offline

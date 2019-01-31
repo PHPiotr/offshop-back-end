@@ -1,9 +1,27 @@
 'use strict';
 
-const AWS = require('aws-sdk');
 const uuid = require('uuid/v4');
+const dynamoDb = require('serverless-dynamodb-client').doc;
 
-const client = new AWS.DynamoDB.DocumentClient();
+module.exports.list = async (event, context) => {
+    const params = {
+        TableName: 'products',
+    };
+
+    try {
+        const result = await dynamoDb.scan(params).promise();
+        return {
+            statusCode: 200,
+            body: JSON.stringify(result),
+        };
+    } catch (e) {
+        console.log(e);
+        return {
+            statusCode: e.statusCode || 500,
+            body: JSON.stringify(e),
+        };
+    }
+};
 
 module.exports.get = async (event, context) => {
     const params = {
@@ -14,7 +32,7 @@ module.exports.get = async (event, context) => {
     };
 
     try {
-        const result = await client.get(params).promise();
+        const result = await dynamoDb.get(params).promise();
         if (result.Item) {
             return {
                 statusCode: 200,
@@ -42,13 +60,13 @@ module.exports.create = async (event, context) => {
             id: uuid(),
             text: data.text,
             checked: false,
-        },
+        }
     };
 
-    await client.put(params).promise();
+    await dynamoDb.put(params).promise();
 
     return {
         statusCode: 201,
-        body: JSON.stringify(data),
+        body: JSON.stringify(params.Item),
     };
 };
