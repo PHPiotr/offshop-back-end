@@ -1,13 +1,20 @@
 const express = require('express');
 const router = express.Router();
 const request = require('request');
+const crypto = require('crypto');
 const accessTokenCheck = require('../middleware/accessTokenCheck');
 const orderCreateParamsCheck = require('../middleware/orderCreateParamsCheck');
 const OrderModel = require('../models/OrderModel');
 const ProductModel = require('../models/ProductModel');
+const verifyNotificationSignature = require('../middleware/verifyNotificationSignature');
 
 const MAX_RETRIEVE_ORDER_RETRIES = 10;
 const PENDING = 'PENDING';
+
+router.all('/notify', verifyNotificationSignature, (req, res, next) => {
+    // TODO: Store order
+    res.sendStatus(200);
+});
 
 // OrderCreateRequest
 router.post('/', accessTokenCheck, orderCreateParamsCheck, (req, res, next) => {
@@ -38,7 +45,7 @@ router.post('/', accessTokenCheck, orderCreateParamsCheck, (req, res, next) => {
         body: JSON.stringify({
             extOrderId,
             payMethods,
-            notifyUrl,
+            notifyUrl : 'https://eed735d8.ngrok.io/orders/notify',
             continueUrl,
             customerIp,
             merchantPosId,
