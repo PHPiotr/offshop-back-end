@@ -5,10 +5,10 @@ if (process.env.NODE_ENV !== 'production') {
 const express = require('express');
 const db = require('./db');
 const app = express();
-const https = require('https');
-const fs = require('fs');
+const http = require('http');
 const path = require('path');
 const cors = require('cors');
+const helmet = require('helmet');
 const authorize = require('./routes/authorize');
 const orders = require('./routes/orders');
 const categories = require('./routes/categories');
@@ -18,7 +18,12 @@ const port = process.env.PORT || 8080;
 
 app.use(express.static(path.join(__dirname, 'public')));
 app.use(express.json());
-app.use(cors());
+app.use(helmet());
+app.use(cors({
+    origin: process.env.ACCESS_CONTROL_ALLOW_ORIGIN,
+    allowedHeaders: ['Content-Type', 'Authorization'],
+    credentials: true,
+}));
 app.locals.db = db;
 app.use('/authorize', authorize);
 app.use('/orders', orders);
@@ -32,12 +37,6 @@ app.all('*', (req, res, next) => {
 
 app.use(errorHandler);
 
-const httpsOptions = {
-    key: fs.readFileSync(process.env.SSL_KEY),
-    cert: fs.readFileSync(process.env.SSL_CRT),
-    requestCert: false,
-    rejectUnauthorized: false,
-};
-https.createServer(httpsOptions, app).listen(port, () => {
+http.createServer(app).listen(port, () => {
     console.log('server running at ' + port)
 });
