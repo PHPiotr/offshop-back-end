@@ -1,19 +1,18 @@
 const express = require('express');
 const router = express.Router();
 const request = require('request');
-const crypto = require('crypto');
 const accessTokenCheck = require('../middleware/accessTokenCheck');
 const orderCreateParamsCheck = require('../middleware/orderCreateParamsCheck');
 const OrderModel = require('../models/OrderModel');
-const ProductModel = require('../models/ProductModel');
 const verifyNotificationSignature = require('../middleware/verifyNotificationSignature');
 
-const MAX_RETRIEVE_ORDER_RETRIES = 10;
-const PENDING = 'PENDING';
-
-router.all('/notify', verifyNotificationSignature, (req, res, next) => {
-    // TODO: Store order
-    res.sendStatus(200);
+router.post('/notify', verifyNotificationSignature, (req, res, next) => {
+    // TODO: Cancel in case of REJECTED
+    const {order, localReceiptDateTime, properties} = req.body;
+    OrderModel.findOneAndUpdate(
+        {orderId: order.orderId, status: {$ne: 'COMPLETED'}},
+        {$set: Object.assign(order, localReceiptDateTime, {properties})},
+        err => err ? next(err) : res.sendStatus(200));
 });
 
 // OrderCreateRequest
@@ -45,7 +44,7 @@ router.post('/', accessTokenCheck, orderCreateParamsCheck, (req, res, next) => {
         body: JSON.stringify({
             extOrderId,
             payMethods,
-            notifyUrl : 'https://eed735d8.ngrok.io/orders/notify',
+            notifyUrl,
             continueUrl,
             customerIp,
             merchantPosId,
@@ -65,39 +64,32 @@ router.post('/', accessTokenCheck, orderCreateParamsCheck, (req, res, next) => {
         const json = JSON.parse(body);
         if (response.statusCode >= 400) {
             res.status(response.statusCode);
-            console.error(json);
-            return next(Error(`Problem po stronie systemu płatności PayU (${response.statusCode} ${response.statusMessage})`));
+            const {status: {codeLiteral, statusDesc}} = json;
+            return next(Error(`${codeLiteral} ${statusDesc}`));
         }
         const {orderId, redirectUri} = json;
 
-        const Order = new OrderModel({
-            orderId,
-            extOrderId,
-            totalAmount,
-            customerIp,
-            description,
-            buyer,
-            buyerDelivery,
-            currencyCode,
-            products,
-            productsIds,
-            redirectUri,
-        });
-        Order.save(function (err, order) {
-            if (err) {
-                return next(err);
-            }
-            productsIds.forEach(_id => {
-                ProductModel.update({_id}, { $inc: { quantity: -(products[_id].quantity) } });
+        // Need to store buyerDelivery now as it is not retrievable later.
+        OrderModel.findOneAndUpdate(
+            {extOrderId},
+            {$set: {orderId, extOrderId, buyerDelivery, productsIds}},
+            {'new': true, upsert: true, runValidators: true, setDefaultsOnInsert: true}, function(err, doc) {
+                if (err) {
+                    console.log(err);
+                    return next(err);
+                }
+                res.json({
+                    extOrderId,
+                    redirectUri,
+                    productsIds,
+                });
             });
-            res.json(order);
-        });
     };
 
     request.post(options, callback);
 });
 
-// OrderRetrieveRequest (and sync status if needed)
+// OrderRetrieveRequest
 router.get('/:extOrderId', accessTokenCheck, (req, res, next) => {
 
     const {extOrderId} = req.params;
