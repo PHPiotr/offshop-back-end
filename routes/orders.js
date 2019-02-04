@@ -6,13 +6,48 @@ const orderCreateParamsCheck = require('../middleware/orderCreateParamsCheck');
 const OrderModel = require('../models/OrderModel');
 const verifyNotificationSignature = require('../middleware/verifyNotificationSignature');
 
-router.post('/notify', verifyNotificationSignature, (req, res, next) => {
-    // TODO: Cancel in case of REJECTED
-    const {order, localReceiptDateTime, properties} = req.body;
-    OrderModel.findOneAndUpdate(
-        {orderId: order.orderId, status: {$ne: 'COMPLETED'}},
-        {$set: Object.assign(order, localReceiptDateTime, {properties})},
-        err => err ? next(err) : res.sendStatus(200));
+router.post('/notify', verifyNotificationSignature, async (req, res, next) => {
+    const {body: {order, localReceiptDateTime, properties}} = req;
+
+    try {
+        const conditions = {orderId: {$eq: order.orderId}, status: {$ne: 'COMPLETED'}};
+        const update = {$set: Object.assign(order, localReceiptDateTime, {properties})};
+        const options = {'new': true, runValidators: true};
+
+        const {status, merchantPosId} = await OrderModel.findOneAndUpdate(conditions, update, options).exec();
+
+        if (status !== 'REJECTED') {
+            return res.sendStatus(200);
+        }
+
+        // Cancel an order and proceed with a refund in case of REJECTED
+        request.post({
+            url: `${process.env.PAYU_HOST}/pl/standard/user/oauth/authorize`,
+            body: `grant_type=client_credentials&client_id=${merchantPosId}&client_secret=${process.env.PAYU_CLIENT_SECRET}`,
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+            }
+        }, function(err, response, body) {
+            if (err) {
+                throw err;
+            }
+            const {access_token} = JSON.parse(body);
+            request.delete({
+                url: `${process.env.PAYU_API}/orders/${order.orderId}`,
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${access_token}`,
+                },
+            }, function(err, {statusCode}) {
+                if (err) {
+                    throw err;
+                }
+                return res.sendStatus(statusCode);
+            });
+        });
+    } catch (err) {
+        next(err);
+    }
 });
 
 // OrderCreateRequest
