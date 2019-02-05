@@ -29,8 +29,8 @@ const OrderSchema = new Schema({
     },
     products: [Object],
     productsIds: [ObjectId],
+    productsById: Object,
     buyerDelivery: Object,
-    products: [Object],
     localReceiptDateTime: Date,
     properties: [Object],
 }, {

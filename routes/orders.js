@@ -115,7 +115,7 @@ module.exports = (io, router, OrderModel) => {
             // Need to store buyerDelivery now as it is not retrievable later.
             OrderModel.findOneAndUpdate(
                 {extOrderId},
-                {$set: {orderId, extOrderId, buyerDelivery, productsIds}},
+                {$set: {orderId, extOrderId, buyerDelivery, productsIds, productsById: products}},
                 {'new': true, upsert: true, runValidators: true, setDefaultsOnInsert: true}, function (err, doc) {
                     if (err) {
                         console.log(err);
