@@ -14,7 +14,10 @@ const orders = require('./routes/orders');
 const categories = require('./routes/categories');
 const products = require('./routes/products');
 const errorHandler = require('./routes/errorHandler');
-const port = process.env.PORT || 8080;
+const PORT = process.env.PORT || 9000;
+
+const server = http.createServer(app);
+const io = require('socket.io')(server);
 
 app.use(express.static(path.join(__dirname, 'public')));
 app.use(express.json());
@@ -26,7 +29,7 @@ app.use(cors({
 }));
 app.locals.db = db;
 app.use('/authorize', authorize);
-app.use('/orders', orders);
+app.use('/orders', orders(io, express.Router(), require('./models/OrderModel')));
 app.use('/categories', categories);
 app.use('/products', products);
 
@@ -37,6 +40,6 @@ app.all('*', (req, res, next) => {
 
 app.use(errorHandler);
 
-http.createServer(app).listen(port, () => {
-    console.log('server running at ' + port)
+server.listen(PORT, () => {
+    console.log('server running at ' + PORT)
 });
