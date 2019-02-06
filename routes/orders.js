@@ -68,7 +68,6 @@ module.exports = (io, router, OrderModel) => {
             currencyCode,
             totalAmount,
             buyer,
-            buyerDelivery,
             settings,
             products,
             productsIds,
@@ -91,10 +90,10 @@ module.exports = (io, router, OrderModel) => {
                 continueUrl,
                 customerIp,
                 merchantPosId,
-                description,
+                description: `${description} ${extOrderId}`,
                 currencyCode,
                 totalAmount,
-                buyer: Object.assign({}, buyer, {'buyer.delivery': buyerDelivery}),
+                buyer,
                 settings,
                 products: productsIds.map(i => products[i]),
             }),
@@ -112,11 +111,10 @@ module.exports = (io, router, OrderModel) => {
             }
             const {orderId, redirectUri} = json;
 
-            // Need to store buyerDelivery now as it is not retrievable later.
             OrderModel.findOneAndUpdate(
                 {extOrderId},
-                {$set: {orderId, extOrderId, buyerDelivery, productsIds, productsById: products}},
-                {'new': true, upsert: true, runValidators: true, setDefaultsOnInsert: true}, function (err, doc) {
+                {$set: {orderId, extOrderId, productsIds, productsById: products}},
+                {'new': true, upsert: true, runValidators: true, setDefaultsOnInsert: true}, function (err) {
                     if (err) {
                         console.log(err);
                         return next(err);

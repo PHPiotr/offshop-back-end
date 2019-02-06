@@ -30,7 +30,6 @@ const OrderSchema = new Schema({
     products: [Object],
     productsIds: [ObjectId],
     productsById: Object,
-    buyerDelivery: Object,
     localReceiptDateTime: Date,
     properties: [Object],
 }, {
