@@ -1,188 +1,229 @@
-const express = require('express');
-const router = express.Router();
 const request = require('request');
 const accessTokenCheck = require('../middleware/accessTokenCheck');
 const orderCreateParamsCheck = require('../middleware/orderCreateParamsCheck');
-const OrderModel = require('../models/OrderModel');
-const ProductModel = require('../models/ProductModel');
+const verifyNotificationSignature = require('../middleware/verifyNotificationSignature');
 
-const MAX_RETRIEVE_ORDER_RETRIES = 10;
-const PENDING = 'PENDING';
+module.exports = (io, router, OrderModel) => {
 
-// OrderCreateRequest
-router.post('/', accessTokenCheck, orderCreateParamsCheck, (req, res, next) => {
+    router.post('/notify', verifyNotificationSignature, async (req, res, next) => {
 
-    const {
-        payMethods,
-        merchantPosId,
-        description,
-        currencyCode,
-        totalAmount,
-        buyer,
-        buyerDelivery,
-        settings,
-        products,
-        productsIds,
-        continueUrl,
-        notifyUrl,
-    } = req.body;
-    const extOrderId = req.app.locals.db.Types.ObjectId().toString();
-    const customerIp = req.ip;
+        const {body: {order, localReceiptDateTime, properties}} = req;
 
-    const options = {
-        url: `${process.env.PAYU_API}/orders`,
-        headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `${req.headers.authorization}`,
-        },
-        body: JSON.stringify({
-            extOrderId,
+        try {
+            const conditions = {orderId: {$eq: order.orderId}, status: {$nin: ['COMPLETED', 'CANCELED']}};
+            const update = {$set: Object.assign(order, localReceiptDateTime, {properties})};
+            const options = {'new': true, runValidators: true};
+
+            const updatedOrder = await OrderModel.findOneAndUpdate(conditions, update, options).exec();
+
+            if (!updatedOrder) {
+                return res.sendStatus(200);
+            }
+
+            io.emit('order', updatedOrder);
+
+            const {status, merchantPosId} = updatedOrder;
+
+            if (status !== 'REJECTED') {
+                return res.sendStatus(200);
+            }
+
+            // Cancel an order and proceed with a refund in case of REJECTED
+            request.post({
+                url: `${process.env.PAYU_HOST}/pl/standard/user/oauth/authorize`,
+                body: `grant_type=client_credentials&client_id=${merchantPosId}&client_secret=${process.env.PAYU_CLIENT_SECRET}`,
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                }
+            }, function (err, response, body) {
+                if (err) {
+                    throw err;
+                }
+                const {access_token} = JSON.parse(body);
+                request.delete({
+                    url: `${process.env.PAYU_API}/orders/${order.orderId}`,
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${access_token}`,
+                    },
+                }, function (err, {statusCode}) {
+                    if (err) {
+                        throw err;
+                    }
+                    return res.sendStatus(statusCode);
+                });
+            });
+        } catch (err) {
+            next(err);
+        }
+    });
+
+    // OrderCreateRequest
+    router.post('/', accessTokenCheck, orderCreateParamsCheck, (req, res, next) => {
+
+        const {
             payMethods,
-            notifyUrl,
-            continueUrl,
-            customerIp,
             merchantPosId,
             description,
             currencyCode,
             totalAmount,
-            buyer: Object.assign({}, buyer, {'buyer.delivery': buyerDelivery}),
-            settings,
-            products: productsIds.map(i => products[i]),
-        }),
-    };
-
-    const callback = (err, response, body) => {
-        if (err) {
-            return next(err);
-        }
-        const json = JSON.parse(body);
-        if (response.statusCode >= 400) {
-            res.status(response.statusCode);
-            console.error(json);
-            return next(Error(`Problem po stronie systemu płatności PayU (${response.statusCode} ${response.statusMessage})`));
-        }
-        const {orderId, redirectUri} = json;
-
-        const Order = new OrderModel({
-            orderId,
-            extOrderId,
-            totalAmount,
-            customerIp,
-            description,
             buyer,
-            buyerDelivery,
-            currencyCode,
+            settings,
             products,
             productsIds,
-            redirectUri,
-        });
-        Order.save(function (err, order) {
-            if (err) {
-                return next(err);
-            }
-            productsIds.forEach(_id => {
-                ProductModel.update({_id}, { $inc: { quantity: -(products[_id].quantity) } });
-            });
-            res.json(order);
-        });
-    };
+            continueUrl,
+            notifyUrl,
+        } = req.body;
+        const extOrderId = req.app.locals.db.Types.ObjectId().toString();
+        const customerIp = req.ip;
 
-    request.post(options, callback);
-});
-
-// OrderRetrieveRequest (and sync status if needed)
-router.get('/:extOrderId', accessTokenCheck, (req, res, next) => {
-
-    const {extOrderId} = req.params;
-    if (typeof extOrderId !== 'string' || !extOrderId.trim()) {
-        res.status(401);
-        return next(Error('Invalid order id'));
-    }
-
-    let orderDoc;
-    let alreadyRetriedTimes = 0;
-    let requestOptions;
-
-    const callback = (err, response, body) => {
-        if (err) {
-            return next(err);
-        }
-
-        if (response.statusCode !== 200) {
-            res.status(response.statusCode);
-            return next(Error(response.statusMessage));
-        }
-
-        const json = JSON.parse(body);
-        const status = json.orders[0].status;
-        if (status === PENDING && MAX_RETRIEVE_ORDER_RETRIES > alreadyRetriedTimes) {
-            alreadyRetriedTimes++;
-            return setTimeout(function() {
-                request.get(requestOptions, callback);
-            }, 300);
-        }
-        console.log('retried times: ', alreadyRetriedTimes);
-        if (orderDoc.status === status) {
-            return res.json(orderDoc);
-        }
-
-        const properties = (json.properties || []).reduce((acc, {name, value}) => {
-            acc[name] = value;
-            return acc;
-        }, {});
-
-        orderDoc.set({status, properties});
-        orderDoc.save(function (err, updatedOrder) {
-            if (err) {
-                return next(err);
-            }
-            res.json(updatedOrder);
-        });
-    };
-
-    OrderModel.findOne({extOrderId: extOrderId}, function (err, order) {
-        if (err) {
-            return next(err);
-        }
-        orderDoc = order;
-
-        requestOptions = {
-            url: `${process.env.PAYU_API}/orders/${orderDoc.orderId}`,
+        const options = {
+            url: `${process.env.PAYU_API}/orders`,
             headers: {
                 'Content-Type': 'application/json',
                 'Authorization': `${req.headers.authorization}`,
             },
+            body: JSON.stringify({
+                extOrderId,
+                payMethods,
+                notifyUrl,
+                continueUrl,
+                customerIp,
+                merchantPosId,
+                description: `${description} ${extOrderId}`,
+                currencyCode,
+                totalAmount,
+                buyer,
+                settings,
+                products: productsIds.map(i => products[i]),
+            }),
         };
 
-        request.get(requestOptions, callback);
+        const callback = (err, response, body) => {
+            if (err) {
+                return next(err);
+            }
+            const json = JSON.parse(body);
+            if (response.statusCode >= 400) {
+                res.status(response.statusCode);
+                const {status: {codeLiteral, statusDesc}} = json;
+                return next(Error(`${codeLiteral} ${statusDesc}`));
+            }
+            const {orderId, redirectUri} = json;
+
+            OrderModel.findOneAndUpdate(
+                {extOrderId},
+                {$set: {orderId, extOrderId, productsIds, productsById: products}},
+                {'new': true, upsert: true, runValidators: true, setDefaultsOnInsert: true}, function (err) {
+                    if (err) {
+                        console.log(err);
+                        return next(err);
+                    }
+                    res.json({
+                        extOrderId,
+                        redirectUri,
+                        productsIds,
+                    });
+                });
+        };
+
+        request.post(options, callback);
     });
-});
 
-// TransactionRetrieveRequest
-router.get('/:orderId/transactions', accessTokenCheck, (req, res, next) => {
+    // OrderRetrieveRequest
+    router.get('/:extOrderId', accessTokenCheck, (req, res, next) => {
 
-    const {orderId} = req.params;
-    if (typeof orderId !== 'string' || !orderId.trim()) {
-        res.status(401);
-        return next(Error('Invalid order id'));
-    }
-
-    const options = {
-        url: `${process.env.PAYU_API}/orders/${orderId}/transactions`,
-        headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `${req.headers.accessToken}`,
-        },
-    };
-
-    const callback = (err, response, body) => {
-        if (err) {
-            return next(err);
+        const {extOrderId} = req.params;
+        if (typeof extOrderId !== 'string' || !extOrderId.trim()) {
+            res.status(401);
+            return next(Error('Invalid order id'));
         }
-        res.json(JSON.parse(body));
-    };
 
-    request.get(options, callback);
-});
+        let orderDoc;
+        let alreadyRetriedTimes = 0;
+        let requestOptions;
 
-module.exports = router;
+        const callback = (err, response, body) => {
+            if (err) {
+                return next(err);
+            }
+
+            if (response.statusCode !== 200) {
+                res.status(response.statusCode);
+                return next(Error(response.statusMessage));
+            }
+
+            const json = JSON.parse(body);
+            const status = json.orders[0].status;
+            if (status === PENDING && MAX_RETRIEVE_ORDER_RETRIES > alreadyRetriedTimes) {
+                alreadyRetriedTimes++;
+                return setTimeout(function () {
+                    request.get(requestOptions, callback);
+                }, 300);
+            }
+            console.log('retried times: ', alreadyRetriedTimes);
+            if (orderDoc.status === status) {
+                return res.json(orderDoc);
+            }
+
+            const properties = (json.properties || []).reduce((acc, {name, value}) => {
+                acc[name] = value;
+                return acc;
+            }, {});
+
+            orderDoc.set({status, properties});
+            orderDoc.save(function (err, updatedOrder) {
+                if (err) {
+                    return next(err);
+                }
+                res.json(updatedOrder);
+            });
+        };
+
+        OrderModel.findOne({extOrderId: extOrderId}, function (err, order) {
+            if (err) {
+                return next(err);
+            }
+            orderDoc = order;
+
+            requestOptions = {
+                url: `${process.env.PAYU_API}/orders/${orderDoc.orderId}`,
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `${req.headers.authorization}`,
+                },
+            };
+
+            request.get(requestOptions, callback);
+        });
+    });
+
+    // TransactionRetrieveRequest
+    router.get('/:orderId/transactions', accessTokenCheck, (req, res, next) => {
+
+        const {orderId} = req.params;
+        if (typeof orderId !== 'string' || !orderId.trim()) {
+            res.status(401);
+            return next(Error('Invalid order id'));
+        }
+
+        const options = {
+            url: `${process.env.PAYU_API}/orders/${orderId}/transactions`,
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `${req.headers.accessToken}`,
+            },
+        };
+
+        const callback = (err, response, body) => {
+            if (err) {
+                return next(err);
+            }
+            res.json(JSON.parse(body));
+        };
+
+        request.get(options, callback);
+    });
+
+    return router;
+};

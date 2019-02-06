@@ -3,28 +3,35 @@ const Schema = mongoose.Schema
 const ObjectId = Schema.Types.ObjectId;
 
 const OrderSchema = new Schema({
-    extOrderId: ObjectId,
-    totalAmount: String,
+    orderId: {
+        type: String,
+        required: true,
+        unique: true,
+    },
+    extOrderId: {
+        type: ObjectId,
+        required: true,
+        unique: true,
+    },
+    orderCreateDate: Date,
+    notifyUrl: String,
     customerIp: String,
+    merchantPosId: String,
     description: String,
-    buyer: {
-        type: Map,
-        of: String,
-    },
-    buyerDelivery: {
-        type: Map,
-        of: String,
-    },
     currencyCode: String,
-    productsIds: [ObjectId],
+    totalAmount: String,
+    buyer: Object,
+    payMethod: Object,
+    status: {
+        type: String,
+        enum: ['PENDING', 'WAITING_FOR_CONFIRMATION', 'COMPLETED', 'CANCELED', 'REJECTED'],
+        index: true,
+    },
     products: [Object],
-    orderId: String,
-    redirectUri: String,
-    status: String,
-    properties: {
-        type: Map,
-        of: String,
-    }
+    productsIds: [ObjectId],
+    productsById: Object,
+    localReceiptDateTime: Date,
+    properties: [Object],
 }, {
     timestamps: true,
 });

@@ -1,0 +1,56 @@
+service: offshop-back-end # NOTE: update this with your service name
+provider:
+  name: aws
+  runtime: nodejs8.10
+  stage: dev
+  region: eu-central-1
+  iamRoleStatements:
+    - Effect: Allow
+      Action:
+        - dynamodb:Query
+        - dynamodb:Scan
+        - dynamodb:GetItem
+        - dynamodb:PutItem
+        - dynamodb:UpdateItem
+        - dynamodb:DeleteItem
+      Resource:
+        - { "Fn::GetAtt": ["ProductsTable", "Arn"] }
+functions:
+  listProducts:
+    handler: handlers/products.list
+    events:
+      - http:
+          path: products
+          method: get
+  getProduct:
+    handler: handlers/products.get
+    events:
+      - http:
+          path: products/{id}
+          method: get
+  createProduct:
+    handler: handlers/products.create
+    events:
+      - http:
+          path: products
+          method: post
+resources:
+  Resources:
+    ProductsTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        TableName: products
+        AttributeDefinitions:
+          -
+            AttributeName: id
+            AttributeType: S
+        KeySchema:
+          -
+            AttributeName: id
+            KeyType: HASH
+        ProvisionedThroughput:
+          ReadCapacityUnits: 1
+          WriteCapacityUnits: 1
+plugins:
+  - serverless-dynamodb-local
+  - serverless-offline
