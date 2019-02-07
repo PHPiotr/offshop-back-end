@@ -2,7 +2,10 @@ const mongoose = require('mongoose');
 
 //Set up default mongoose connection
 const mongoDB = process.env.MONGODB;
-mongoose.connect(mongoDB, { useNewUrlParser: true });
+mongoose.connect(mongoDB, {
+    autoIndex: process.env.NODE_ENV !== 'production',
+    useNewUrlParser: true,
+});
 // Get Mongoose to use the global promise library
 mongoose.Promise = global.Promise;
 //Get the default connection
