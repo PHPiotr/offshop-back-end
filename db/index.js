@@ -2,8 +2,10 @@ const mongoose = require('mongoose');
 
 //Set up default mongoose connection
 const mongoDB = process.env.MONGODB;
+const PRODUCTION_MODE = process.env.NODE_ENV === 'production';
 mongoose.connect(mongoDB, {
-    autoIndex: process.env.NODE_ENV !== 'production',
+    autoCreate: !PRODUCTION_MODE,
+    autoIndex: !PRODUCTION_MODE,
     useNewUrlParser: true,
 });
 // Get Mongoose to use the global promise library
