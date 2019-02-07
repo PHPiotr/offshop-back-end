@@ -4,12 +4,9 @@ const CategorySchema = require('./CategorySchema');
 
 const ProductSchema = new Schema({
     name: String,
-    unitPrice: String,
-    quantity: String,
+    slug: String,
     categoryId: String,
     category: CategorySchema,
-    name: String,
-    slug: String,
     active: {
         type: Boolean,
         default: true,
@@ -26,7 +23,6 @@ const ProductSchema = new Schema({
         type: Number,
         default: 0,
     },
-    img: String,
     unitsPerProduct: {
         type: Number,
         default: 1,
@@ -35,6 +31,7 @@ const ProductSchema = new Schema({
         type: String,
         default: 'kg',
     },
+    img: String,
 }, {
     timestamps: true,
 });
