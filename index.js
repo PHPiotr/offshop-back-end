@@ -19,6 +19,9 @@ const PORT = process.env.PORT || 9000;
 const server = http.createServer(app);
 const io = require('socket.io')(server);
 
+const OrderModel = require('./models/OrderModel');
+const ProductModel = require('./models/ProductModel');
+
 app.use(express.static(path.join(__dirname, 'public')));
 app.use(express.json());
 app.use(helmet());
@@ -29,7 +32,7 @@ app.use(cors({
 }));
 app.locals.db = db;
 app.use('/authorize', authorize);
-app.use('/orders', orders(io, express.Router(), require('./models/OrderModel')));
+app.use('/orders', orders(io, express.Router(), OrderModel, ProductModel));
 app.use('/categories', categories);
 app.use('/products', products);
 
