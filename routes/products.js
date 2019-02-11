@@ -1,40 +1,43 @@
-const express = require('express');
-const router = express.Router();
-const ProductModel = require('../models/ProductModel');
 const queryOptionsCheck = require('../middleware/queryOptionsCheck');
 
-router.get('/', queryOptionsCheck(ProductModel), async (req, res, next) => {
-    try {
-        const projection = null;
-        const query = ProductModel.find({ active: true }, projection, req.query.validQueryOptions);
-        const docs = await query.exec();
-        res.json(docs);
-    } catch (err) {
-        next(err);
-    }
-});
+module.exports = (io, router, ProductModel) => {
 
-router.get('/:slug', (req, res, next) => {
-    res.json({});
-});
-
-router.post('/', (req, res, next) => {
-    ProductModel.create(req.body, function(err, product) {
-        if (err) {
-            return next(err);
+    router.get('/', queryOptionsCheck(ProductModel), async (req, res, next) => {
+        try {
+            const projection = null;
+            const query = ProductModel.find({ active: true }, projection, req.query.validQueryOptions);
+            const docs = await query.exec();
+            res.json(docs);
+        } catch (err) {
+            next(err);
         }
-
-        res.set('Location', `https://localhost:9000/products/${product.slug}`);
-        res.json(product);
     });
-});
 
-router.put('/:slug', (req, res, next) => {
-    res.json({});
-});
+    router.get('/:slug', (req, res, next) => {
+        res.json({});
+    });
 
-router.delete('/:slug', (req, res, next) => {
-    res.json({});
-});
+    router.post('/', (req, res, next) => {
+        ProductModel.create(req.body, function(err, product) {
+            if (err) {
+                return next(err);
+            }
 
-module.exports = router;
+            io.emit('createProduct', product);
+
+            res.set('Location', `${process.env.API_URL}/products/${product.slug}`);
+            res.status(201).json(product);
+        });
+    });
+
+    router.put('/:slug', (req, res, next) => {
+        res.json({});
+    });
+
+    router.delete('/:slug', (req, res, next) => {
+        res.json({});
+    });
+
+    return router;
+};
+

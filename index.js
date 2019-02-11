@@ -34,7 +34,7 @@ app.locals.db = db;
 app.use('/authorize', authorize);
 app.use('/orders', orders(io, express.Router(), OrderModel, ProductModel));
 app.use('/categories', categories);
-app.use('/products', products);
+app.use('/products', products(io, express.Router(), ProductModel));
 
 app.all('*', (req, res, next) => {
     res.status(404);
