@@ -17,7 +17,7 @@ const errorHandler = require('./routes/errorHandler');
 const PORT = process.env.PORT || 9000;
 
 const server = http.createServer(app);
-const io = require('socket.io')(server);
+const io = require('socket.io')(server, {pingTimeout: 60000});
 
 const OrderModel = require('./models/OrderModel');
 const ProductModel = require('./models/ProductModel');
