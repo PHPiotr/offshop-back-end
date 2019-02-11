@@ -3,7 +3,7 @@ const accessTokenCheck = require('../middleware/accessTokenCheck');
 const orderCreateParamsCheck = require('../middleware/orderCreateParamsCheck');
 const verifyNotificationSignature = require('../middleware/verifyNotificationSignature');
 
-module.exports = (io, router, OrderModel) => {
+module.exports = (io, router, OrderModel, ProductModel) => {
 
     router.post('/notify', verifyNotificationSignature, async (req, res, next) => {
 
@@ -22,7 +22,19 @@ module.exports = (io, router, OrderModel) => {
 
             io.emit('order', updatedOrder);
 
-            const {status, merchantPosId} = updatedOrder;
+            const {status, merchantPosId, productsIds, products} = updatedOrder;
+
+            if (status === 'COMPLETED') {
+                const productsList = await ProductModel.find({_id: {$in: productsIds}});
+                const productsById = {};
+                productsList.forEach(function(doc, index) {
+                    const newQuantity = doc.quantity - products[index].quantity;
+                    doc.quantity = newQuantity < 0 ? 0 : newQuantity;
+                    doc.save();
+                    productsById[doc._id.toString()] = doc;
+                });
+                io.emit('quantities', {productsIds, productsById});
+            }
 
             if (status !== 'REJECTED') {
                 return res.sendStatus(200);
