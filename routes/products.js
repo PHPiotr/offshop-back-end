@@ -1,6 +1,8 @@
 const queryOptionsCheck = require('../middleware/queryOptionsCheck');
 
-module.exports = (io, router, ProductModel) => {
+module.exports = (config) => {
+
+    const {io, router, ProductModel, jwtCheck} = config;
 
     router.get('/', queryOptionsCheck(ProductModel), async (req, res, next) => {
         try {
@@ -17,7 +19,7 @@ module.exports = (io, router, ProductModel) => {
         res.json({});
     });
 
-    router.post('/', (req, res, next) => {
+    router.post('/', jwtCheck(), (req, res, next) => {
         ProductModel.create(req.body, function(err, product) {
             if (err) {
                 return next(err);
@@ -30,11 +32,11 @@ module.exports = (io, router, ProductModel) => {
         });
     });
 
-    router.put('/:slug', (req, res, next) => {
+    router.put('/:slug',  jwtCheck(), (req, res, next) => {
         res.json({});
     });
 
-    router.delete('/:slug', (req, res, next) => {
+    router.delete('/:slug',  jwtCheck(), (req, res, next) => {
         res.json({});
     });
 

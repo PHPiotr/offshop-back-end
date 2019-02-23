@@ -1,11 +1,23 @@
 const mongoose = require('mongoose');
 const Schema = mongoose.Schema;
 const CategorySchema = require('./CategorySchema');
+const slugify = require('slugify');
 
 const ProductSchema = new Schema({
-    name: String,
-    slug: String,
-    categoryId: String,
+    name: {
+        type: String,
+        required: true,
+        trim: true,
+        unique: true,
+    },
+    slug: {
+        type: String,
+        trim: true,
+        unique: true,
+    },
+    categoryId: {
+        type: String,
+    },
     category: CategorySchema,
     active: {
         type: Boolean,
@@ -13,15 +25,14 @@ const ProductSchema = new Schema({
     },
     quantity: {
         type: Number,
-        default: 0,
+        default: 1,
     },
     price: {
         type: Number,
-        default: 0,
+        required: true,
     },
     unitPrice: {
         type: Number,
-        default: 0,
     },
     unitsPerProduct: {
         type: Number,
@@ -34,6 +45,11 @@ const ProductSchema = new Schema({
     img: String,
 }, {
     timestamps: true,
+});
+
+ProductSchema.pre('save', async function() {
+    this.slug = slugify(this.name, {lower: true});
+    this.unitPrice = this.unitsPerProduct === 1 ? this.price : this.price / this.unitsPerProduct;
 });
 
 module.exports = ProductSchema;
