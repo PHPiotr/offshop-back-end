@@ -50,7 +50,7 @@ const ProductSchema = new Schema({
 ProductSchema.pre('save', async function() {
     this.slug = slugify(this.name, {lower: true});
     this.unitPrice = this.unitsPerProduct === 1 ? this.price : this.price / this.unitsPerProduct;
-    this.img = slugify(this.img);
+    this.img = `${this.slug}.png`;
 });
 
 module.exports = ProductSchema;
