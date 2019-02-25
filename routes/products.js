@@ -34,9 +34,8 @@ module.exports = (config) => {
         const slug = slugify(req.body.name, {lower: true});
 
         Promise.all([
-            resize(buffer, {width: 800, height: 600}, `./public/images/products/${slug}.800x600.png`),
-            resize(buffer, {width: 320, height: 240}, `./public/images/products/${slug}.320x240.png`),
-            resize(buffer, {width: 40, height: 40}, `./public/images/products/${slug}.40x40.png`),
+            resize(buffer, {width: 320, height: 240}, `./public/images/products/${slug}.tile.png`),
+            resize(buffer, {width: 40, height: 40}, `./public/images/products/${slug}.avatar.png`),
         ]).then(() => {
             ProductModel.create(req.body, function (err, product) {
                 if (err) {
