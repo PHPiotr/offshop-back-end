@@ -20,15 +20,26 @@ module.exports = (config) => {
     });
 
     router.post('/', jwtCheck(), (req, res, next) => {
+        if (!Object.keys(req.files).length) {
+            res.status(400);
+            return next(new Error('No files were uploaded.'));
+        }
+        const uploadedFile = req.files.img;
+
+        req.body.img = uploadedFile.name;
         ProductModel.create(req.body, function(err, product) {
             if (err) {
                 return next(err);
             }
+            uploadedFile.mv(`./public/images/products/${product.img}`, function(err) {
+                if (err) {
+                    // TODO: Product created with no image
+                }
+                io.emit('createProduct', product);
 
-            io.emit('createProduct', product);
-
-            res.set('Location', `${process.env.API_URL}/products/${product.slug}`);
-            res.status(201).json(product);
+                res.set('Location', `${process.env.API_URL}/products/${product.slug}`);
+                res.status(201).json(product);
+            });
         });
     });
 
