@@ -2,14 +2,20 @@ module.exports = (err, req, res, next) => {
     if (!err) {
         return next();
     }
+    if (err.name === 'UnauthorizedError') {
+        res.statusCode = err.status;
+    }
     if (err.name === 'ValidationError') {
         if (!err.statusCode) {
             res.statusCode = 422;
         }
     }
+    if (err.name === 'MongoError' && err.code === 11000) {
+        res.statusCode = 422;
+    }
 
     const payload = {
-        errorMessage: err._message || err.message || res.errorMessage || "Don't panic!",
+        errorMessage: err.message || res.errorMessage || "Don't panic!",
         errorCode: err.statusCode || res.statusCode || 500,
     };
 

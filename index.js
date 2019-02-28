@@ -14,6 +14,8 @@ const orders = require('./routes/orders');
 const categories = require('./routes/categories');
 const products = require('./routes/products');
 const errorHandler = require('./routes/errorHandler');
+const jwtCheck = require('./middleware/jwtCheck');
+const fileUpload = require('express-fileupload');
 const PORT = process.env.PORT || 9000;
 
 const server = http.createServer(app);
@@ -24,6 +26,9 @@ const ProductModel = require('./models/ProductModel');
 
 app.use(express.static(path.join(__dirname, 'public')));
 app.use(express.json());
+app.use(fileUpload({
+    safeFileNames: true,
+}));
 app.use(helmet());
 app.use(cors({
     origin: process.env.ACCESS_CONTROL_ALLOW_ORIGIN,
@@ -34,7 +39,16 @@ app.locals.db = db;
 app.use('/authorize', authorize);
 app.use('/orders', orders(io, express.Router(), OrderModel, ProductModel));
 app.use('/categories', categories);
-app.use('/products', products(io, express.Router(), ProductModel));
+app.use('/products', products({
+    io,
+    jwtCheck,
+    ProductModel,
+    router: express.Router(),
+}));
+app.all('/admin/*', jwtCheck());
+app.get('/admin', jwtCheck(), (req, res) => {
+    res.send('hello')
+});
 
 app.all('*', (req, res, next) => {
     res.status(404);

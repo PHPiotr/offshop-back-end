@@ -1,11 +1,17 @@
 const queryOptionsCheck = require('../middleware/queryOptionsCheck');
+const sharp = require('sharp');
+const slugify = require('slugify');
 
-module.exports = (io, router, ProductModel) => {
+const resize = (buffer, dimensions, toFile) => sharp(buffer).resize(dimensions).toFile(toFile);
+
+module.exports = (config) => {
+
+    const {io, router, ProductModel, jwtCheck} = config;
 
     router.get('/', queryOptionsCheck(ProductModel), async (req, res, next) => {
         try {
             const projection = null;
-            const query = ProductModel.find({ active: true }, projection, req.query.validQueryOptions);
+            const query = ProductModel.find({active: true}, projection, req.query.validQueryOptions);
             const docs = await query.exec();
             res.json(docs);
         } catch (err) {
@@ -17,24 +23,39 @@ module.exports = (io, router, ProductModel) => {
         res.json({});
     });
 
-    router.post('/', (req, res, next) => {
-        ProductModel.create(req.body, function(err, product) {
-            if (err) {
-                return next(err);
-            }
+    router.post('/', jwtCheck(), (req, res, next) => {
+        if (!Object.keys(req.files).length) {
+            res.status(400);
+            return next(new Error('No files were uploaded.'));
+        }
+        const uploadedFile = req.files.img;
 
-            io.emit('createProduct', product);
+        const buffer = uploadedFile.data;
+        const slug = slugify(req.body.name, {lower: true});
 
-            res.set('Location', `${process.env.API_URL}/products/${product.slug}`);
-            res.status(201).json(product);
+        Promise.all([
+            resize(buffer, {width: 320, height: 240}, `./public/images/products/${slug}.tile.png`),
+            resize(buffer, {width: 40, height: 40}, `./public/images/products/${slug}.avatar.png`),
+        ]).then(() => {
+            ProductModel.create(req.body, function (err, product) {
+                if (err) {
+                    return next(err);
+                }
+                io.emit('createProduct', product);
+
+                res.set('Location', `${process.env.API_URL}/products/${product.slug}`);
+                res.status(201).json(product);
+            });
+        }).catch(err => {
+            return next(err);
         });
     });
 
-    router.put('/:slug', (req, res, next) => {
+    router.put('/:slug', jwtCheck(), (req, res, next) => {
         res.json({});
     });
 
-    router.delete('/:slug', (req, res, next) => {
+    router.delete('/:slug', jwtCheck(), (req, res, next) => {
         res.json({});
     });
 
