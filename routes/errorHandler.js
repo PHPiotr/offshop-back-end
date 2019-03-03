@@ -15,8 +15,8 @@ module.exports = (err, req, res, next) => {
     }
 
     const payload = {
-        errorMessage: err.message || res.errorMessage || "Don't panic!",
-        errorCode: err.statusCode || res.statusCode || 500,
+        message: err.message || res.errorMessage || "Don't panic!",
+        status: err.statusCode || res.statusCode || 500,
     };
 
     if (process.env.NODE_ENV === 'development') {
