@@ -29,22 +29,13 @@ const ProductSchema = new Schema({
         type: Number,
         default: 1,
     },
-    price: {
-        type: Number,
-        required: true,
-        get: getMoney,
-    },
     unitPrice: {
         type: Number,
         get: getMoney,
     },
-    unitsPerProduct: {
+    weight: {
         type: Number,
-        default: 1,
-    },
-    unit: {
-        type: String,
-        default: 'kg',
+        required: true,
     },
     img: String,
 }, {
@@ -53,7 +44,6 @@ const ProductSchema = new Schema({
 
 ProductSchema.pre('save', async function() {
     this.slug = slugify(this.name, {lower: true});
-    this.unitPrice = this.unitsPerProduct === 1 ? this._doc.price : this._doc.price / this.unitsPerProduct;
     this.img = `${this.slug}.png`;
 });
 
