@@ -3,6 +3,8 @@ const Schema = mongoose.Schema;
 const CategorySchema = require('./CategorySchema');
 const slugify = require('slugify');
 
+const getMoney = value => (value / 100).toFixed(2);
+
 const ProductSchema = new Schema({
     name: {
         type: String,
@@ -30,9 +32,11 @@ const ProductSchema = new Schema({
     price: {
         type: Number,
         required: true,
+        get: getMoney,
     },
     unitPrice: {
         type: Number,
+        get: getMoney,
     },
     unitsPerProduct: {
         type: Number,
@@ -52,5 +56,8 @@ ProductSchema.pre('save', async function() {
     this.unitPrice = this.unitsPerProduct === 1 ? this.price : this.price / this.unitsPerProduct;
     this.img = `${this.slug}.png`;
 });
+
+ProductSchema.set('toObject', {getters: true});
+ProductSchema.set('toJSON', {getters: true});
 
 module.exports = ProductSchema;
