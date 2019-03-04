@@ -37,14 +37,12 @@ const ProductSchema = new Schema({
         type: Number,
         required: true,
     },
-    img: String,
 }, {
     timestamps: true,
 });
 
 ProductSchema.pre('save', async function() {
     this.slug = slugify(this.name, {lower: true});
-    this.img = `${this.slug}.png`;
 });
 
 ProductSchema.set('toJSON', {getters: true});
