@@ -13,6 +13,7 @@ const authorize = require('./routes/authorize');
 const orders = require('./routes/orders');
 const categories = require('./routes/categories');
 const products = require('./routes/products');
+const deliveryMethods = require('./routes/deliveryMethods');
 const errorHandler = require('./routes/errorHandler');
 const jwtCheck = require('./middleware/jwtCheck');
 const fileUpload = require('express-fileupload');
@@ -23,6 +24,7 @@ const io = require('socket.io')(server, {pingTimeout: 60000});
 
 const OrderModel = require('./models/OrderModel');
 const ProductModel = require('./models/ProductModel');
+const DeliveryMethodModel = require('./models/DeliveryMethodModel');
 
 app.use(express.static(path.join(__dirname, 'public')));
 app.use(express.json());
@@ -43,6 +45,12 @@ app.use('/products', products({
     io,
     jwtCheck,
     ProductModel,
+    router: express.Router(),
+}));
+app.use('/delivery-methods', deliveryMethods({
+    io,
+    jwtCheck,
+    DeliveryMethodModel,
     router: express.Router(),
 }));
 app.all('/admin/*', jwtCheck());
