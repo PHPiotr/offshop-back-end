@@ -7,7 +7,7 @@ module.exports = (config) => {
     router.get('/', queryOptionsCheck(DeliveryMethodModel), async (req, res, next) => {
         try {
             const projection = null;
-            const query = DeliveryMethodModel.find({active: true}, projection, req.query.validQueryOptions);
+            const query = DeliveryMethodModel.find({}, projection, req.query.validQueryOptions);
             const docs = await query.exec();
             res.json(docs);
         } catch (err) {
