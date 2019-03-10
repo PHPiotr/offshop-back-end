@@ -2,6 +2,7 @@ const request = require('request');
 const accessTokenCheck = require('../middleware/accessTokenCheck');
 const orderCreateParamsCheck = require('../middleware/orderCreateParamsCheck');
 const verifyNotificationSignature = require('../middleware/verifyNotificationSignature');
+const productsCheck = require('../middleware/productsCheck');
 
 module.exports = (io, router, OrderModel, ProductModel) => {
 
@@ -71,7 +72,7 @@ module.exports = (io, router, OrderModel, ProductModel) => {
     });
 
     // OrderCreateRequest
-    router.post('/', accessTokenCheck, orderCreateParamsCheck, (req, res, next) => {
+    router.post('/', accessTokenCheck, orderCreateParamsCheck, productsCheck(ProductModel), (req, res, next) => {
 
         const {
             payMethods,
