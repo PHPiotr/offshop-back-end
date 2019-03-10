@@ -14,9 +14,12 @@ module.exports = (err, req, res, next) => {
         res.statusCode = 422;
     }
 
+    const responseStatusCode = parseInt(('' + res.statusCode).charAt(0), 10) > 3 ? res.statusCode : null;
+    const statusCode = err.statusCode || responseStatusCode || 500;
+    res.statusCode = statusCode;
     const payload = {
-        errorMessage: err.message || res.errorMessage || "Don't panic!",
-        errorCode: err.statusCode || res.statusCode || 500,
+        message: err.message || res.errorMessage || `Don't panic! It's just ${statusCode} Error. We will fix it soon.`,
+        status: statusCode,
     };
 
     if (process.env.NODE_ENV === 'development') {

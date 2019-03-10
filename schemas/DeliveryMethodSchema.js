@@ -1,11 +1,9 @@
 const mongoose = require('mongoose');
 const Schema = mongoose.Schema;
-const CategorySchema = require('./CategorySchema');
 const slugify = require('slugify');
-
 const getMoney = require('../utils/getMoney');
 
-const ProductSchema = new Schema({
+const DeliveryMethodSchema = new Schema({
     name: {
         type: String,
         required: true,
@@ -17,34 +15,18 @@ const ProductSchema = new Schema({
         trim: true,
         unique: true,
     },
-    categoryId: {
-        type: String,
-    },
-    category: CategorySchema,
-    active: {
-        type: Boolean,
-        default: true,
-    },
-    stock: {
-        type: Number,
-        default: 1,
-    },
     unitPrice: {
         type: Number,
         get: getMoney,
-    },
-    weight: {
-        type: Number,
-        required: true,
     },
 }, {
     timestamps: true,
 });
 
-ProductSchema.pre('save', async function() {
+DeliveryMethodSchema.pre('save', async function() {
     this.slug = slugify(this.name, {lower: true});
 });
 
-ProductSchema.set('toJSON', {getters: true});
+DeliveryMethodSchema.set('toJSON', {getters: true});
 
-module.exports = ProductSchema;
+module.exports = DeliveryMethodSchema;
