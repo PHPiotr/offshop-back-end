@@ -3,6 +3,7 @@ const accessTokenCheck = require('../middleware/accessTokenCheck');
 const orderCreateParamsCheck = require('../middleware/orderCreateParamsCheck');
 const verifyNotificationSignature = require('../middleware/verifyNotificationSignature');
 const productsCheck = require('../middleware/productsCheck');
+const axios = require('axios');
 
 module.exports = (io, router, OrderModel, ProductModel) => {
 
@@ -72,7 +73,7 @@ module.exports = (io, router, OrderModel, ProductModel) => {
     });
 
     // OrderCreateRequest
-    router.post('/', accessTokenCheck, orderCreateParamsCheck, productsCheck(ProductModel), (req, res, next) => {
+    router.post('/', accessTokenCheck, orderCreateParamsCheck, productsCheck(ProductModel), async (req, res, next) => {
 
         const {
             payMethods,
@@ -90,13 +91,14 @@ module.exports = (io, router, OrderModel, ProductModel) => {
         const extOrderId = req.app.locals.db.Types.ObjectId().toString();
         const customerIp = req.ip;
 
-        const options = {
+        const createOrderRequestConfig = {
             url: `${process.env.PAYU_API}/orders`,
+            method: 'post',
             headers: {
                 'Content-Type': 'application/json',
                 'Authorization': `${req.headers.authorization}`,
             },
-            body: JSON.stringify({
+            data: {
                 extOrderId,
                 payMethods,
                 notifyUrl,
@@ -109,38 +111,28 @@ module.exports = (io, router, OrderModel, ProductModel) => {
                 buyer,
                 settings,
                 products: productsIds.map(i => products[i]),
-            }),
+            },
+            maxRedirects: 0,
+            validateStatus: function (status) {
+                return status === 200 || status === 302;
+            },
         };
 
-        const callback = (err, response, body) => {
-            if (err) {
-                return next(err);
-            }
-            const json = JSON.parse(body);
-            if (response.statusCode >= 400) {
-                res.status(response.statusCode);
-                const {status: {codeLiteral, statusDesc}} = json;
-                return next(Error(`${codeLiteral} ${statusDesc}`));
-            }
-            const {orderId, redirectUri} = json;
-
-            OrderModel.findOneAndUpdate(
+        try {
+            const {data: {orderId, redirectUri}} = await axios(createOrderRequestConfig);
+            await OrderModel.findOneAndUpdate(
                 {extOrderId},
                 {$set: {orderId, extOrderId, productsIds, productsById: products}},
-                {'new': true, upsert: true, runValidators: true, setDefaultsOnInsert: true}, function (err) {
-                    if (err) {
-                        console.log(err);
-                        return next(err);
-                    }
-                    res.json({
-                        extOrderId,
-                        redirectUri,
-                        productsIds,
-                    });
-                });
-        };
-
-        request.post(options, callback);
+                {'new': true, upsert: true, runValidators: true, setDefaultsOnInsert: true}
+            ).exec();
+            res.json({
+                extOrderId,
+                redirectUri,
+                productsIds,
+            });
+        } catch (err) {
+            next(err);
+        }
     });
 
     // OrderRetrieveRequest
