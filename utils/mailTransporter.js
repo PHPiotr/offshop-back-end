@@ -13,12 +13,12 @@ if (process.env.NODE_ENV === 'production' ) {
     };
 } else {
     mailConfig = {
-        host: 'smtp.ethereal.email',
-        port: 587,
-        secure: false,
+        host: process.env.EMAIL_ACCOUNT_SMTP_HOST,
+        port: process.env.EMAIL_ACCOUNT_SMTP_PORT,
+        secure: !!process.env.EMAIL_ACCOUNT_SMTP_SECURE,
         auth: {
-            user: 'q6hiywhgzidefh7u@ethereal.email',
-            pass: 'wz3qYs2Tz2gT5VkvVp',
+            user: process.env.EMAIL_ACCOUNT_USER,
+            pass: process.env.EMAIL_ACCOUNT_PASS,
         }
     };
 }
