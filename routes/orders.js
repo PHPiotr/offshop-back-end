@@ -4,6 +4,8 @@ const orderCreateParamsCheck = require('../middleware/orderCreateParamsCheck');
 const verifyNotificationSignature = require('../middleware/verifyNotificationSignature');
 const productsCheck = require('../middleware/productsCheck');
 const axios = require('axios');
+const mailTransporter = require('../utils/mailTransporter');
+const nodemailer = require('nodemailer');
 
 module.exports = (io, router, OrderModel, ProductModel) => {
 
@@ -114,7 +116,7 @@ module.exports = (io, router, OrderModel, ProductModel) => {
             },
             maxRedirects: 0,
             validateStatus: function (status) {
-                return status === 200 || status === 302;
+                return status === 201 || status === 302;
             },
         };
 
@@ -125,6 +127,14 @@ module.exports = (io, router, OrderModel, ProductModel) => {
                 {$set: {orderId, extOrderId, productsIds, productsById: products}},
                 {'new': true, upsert: true, runValidators: true, setDefaultsOnInsert: true}
             ).exec();
+
+            const info = await mailTransporter.sendMail({
+                from: 'OFFSHOP <no-reply@offshop.com>',
+                to: `${buyer.firstName} ${buyer.lastName} <${buyer.email}>`,
+                subject: `${description} ${extOrderId}`,
+                html: `<p><b>Hello, ${buyer.firstName} ${buyer.lastName}</b></p><p>Your order (No. ${extOrderId}) has been initiated.</p>`
+            });
+
             res.json({
                 extOrderId,
                 redirectUri,
