@@ -5,7 +5,6 @@ const verifyNotificationSignature = require('../middleware/verifyNotificationSig
 const productsCheck = require('../middleware/productsCheck');
 const axios = require('axios');
 const mailTransporter = require('../utils/mailTransporter');
-const nodemailer = require('nodemailer');
 
 module.exports = (io, router, OrderModel, ProductModel) => {
 
@@ -45,30 +44,23 @@ module.exports = (io, router, OrderModel, ProductModel) => {
             }
 
             // Cancel an order and proceed with a refund in case of REJECTED
-            request.post({
+            const {data: {access_token}} = await axios({
                 url: `${process.env.PAYU_HOST}/pl/standard/user/oauth/authorize`,
-                body: `grant_type=client_credentials&client_id=${merchantPosId}&client_secret=${process.env.PAYU_CLIENT_SECRET}`,
-                headers: {
-                    'Content-Type': 'application/x-www-form-urlencoded',
-                }
-            }, function (err, response, body) {
-                if (err) {
-                    throw err;
-                }
-                const {access_token} = JSON.parse(body);
-                request.delete({
-                    url: `${process.env.PAYU_API}/orders/${order.orderId}`,
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${access_token}`,
-                    },
-                }, function (err, {statusCode}) {
-                    if (err) {
-                        throw err;
-                    }
-                    return res.sendStatus(statusCode);
-                });
+                method: 'post',
+                data: `grant_type=client_credentials&client_id=${merchantPosId}&client_secret=${process.env.PAYU_CLIENT_SECRET}`,
+                headers: {'Content-Type': 'application/x-www-form-urlencoded'}
             });
+            const cancelOrderResponse = await axios({
+                url: `${process.env.PAYU_API}/orders/${order.orderId}`,
+                method: 'delete',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${access_token}`,
+                },
+                maxRedirects: 0,
+                validateStatus: status => status === 200,
+            });
+            return res.sendStatus(cancelOrderResponse.status);
         } catch (err) {
             next(err);
         }
@@ -115,9 +107,7 @@ module.exports = (io, router, OrderModel, ProductModel) => {
                 products: productsIds.map(i => products[i]),
             },
             maxRedirects: 0,
-            validateStatus: function (status) {
-                return status === 201 || status === 302;
-            },
+            validateStatus: status => status === 201 || status === 302,
         };
 
         try {
