@@ -112,18 +112,27 @@ module.exports = (io, router, OrderModel, ProductModel) => {
 
         try {
             const {data: {orderId, redirectUri}} = await axios(createOrderRequestConfig);
-            await OrderModel.findOneAndUpdate(
-                {extOrderId},
-                {$set: {orderId, extOrderId, productsIds, productsById: products}},
-                {'new': true, upsert: true, runValidators: true, setDefaultsOnInsert: true}
-            ).exec();
 
-            const info = await mailTransporter.sendMail({
-                from: 'OFFSHOP <no-reply@offshop.com>',
-                to: `${buyer.firstName} ${buyer.lastName} <${buyer.email}>`,
-                subject: `${description} ${extOrderId}`,
-                html: `<p><b>Hello, ${buyer.firstName} ${buyer.lastName}</b></p><p>Your order (No. ${extOrderId}) has been initiated.</p>`
-            });
+            try {
+                await OrderModel.findOneAndUpdate(
+                    {extOrderId},
+                    {$set: {orderId, extOrderId, productsIds, productsById: products}},
+                    {'new': true, upsert: true, runValidators: true, setDefaultsOnInsert: true}
+                ).exec();
+            } catch (e) {
+                // TODO: Log it
+            }
+
+            try {
+                await mailTransporter.sendMail({
+                    from: 'OFFSHOP <no-reply@offshop.com>',
+                    to: `${buyer.firstName} ${buyer.lastName} <${buyer.email}>`,
+                    subject: `${description} ${extOrderId}`,
+                    html: `<p><b>Hello, ${buyer.firstName} ${buyer.lastName}</b></p><p>Your order (No. ${extOrderId}) has been initiated.</p>`
+                });
+            } catch (e) {
+                // TODO: Log it
+            }
 
             res.json({
                 extOrderId,
