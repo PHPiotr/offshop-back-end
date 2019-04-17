@@ -3,6 +3,7 @@ const accessTokenCheck = require('../middleware/accessTokenCheck');
 const orderCreateParamsCheck = require('../middleware/orderCreateParamsCheck');
 const verifyNotificationSignature = require('../middleware/verifyNotificationSignature');
 const productsCheck = require('../middleware/productsCheck');
+const setCreateOrderRequestConfig = require('../middleware/setCreateOrderRequestConfig');
 const axios = require('axios');
 const mailTransporter = require('../utils/mailTransporter');
 
@@ -30,7 +31,7 @@ module.exports = (io, router, OrderModel, ProductModel) => {
             if (status === 'COMPLETED') {
                 const productsList = await ProductModel.find({_id: {$in: productsIds}});
                 const productsById = {};
-                productsList.forEach(function(doc, index) {
+                productsList.forEach(function (doc, index) {
                     const newQuantity = doc.quantity - products[index].quantity;
                     doc.quantity = newQuantity < 0 ? 0 : newQuantity;
                     doc.save();
@@ -67,82 +68,54 @@ module.exports = (io, router, OrderModel, ProductModel) => {
     });
 
     // OrderCreateRequest
-    router.post('/', accessTokenCheck, orderCreateParamsCheck, productsCheck(ProductModel), async (req, res, next) => {
-
-        const {
-            payMethods,
-            merchantPosId,
-            description,
-            currencyCode,
-            totalAmount,
-            buyer,
-            settings,
-            products,
-            productsIds,
-            continueUrl,
-            notifyUrl,
-        } = req.body;
-        const extOrderId = req.app.locals.db.Types.ObjectId().toString();
-        const customerIp = req.ip;
-
-        const createOrderRequestConfig = {
-            url: `${process.env.PAYU_API}/orders`,
-            method: 'post',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `${req.headers.authorization}`,
-            },
-            data: {
-                extOrderId,
-                payMethods,
-                notifyUrl,
-                continueUrl,
-                customerIp,
-                merchantPosId,
-                description: `${description} ${extOrderId}`,
-                currencyCode,
-                totalAmount,
-                buyer,
-                settings,
-                products: productsIds.map(i => products[i]),
-            },
-            maxRedirects: 0,
-            validateStatus: status => status === 201 || status === 302,
-        };
-
-        try {
-            const {data: {orderId, redirectUri}} = await axios(createOrderRequestConfig);
-
+    router.post('/',
+        accessTokenCheck,
+        orderCreateParamsCheck,
+        productsCheck(ProductModel),
+        setCreateOrderRequestConfig,
+        async (req, res, next) => {
             try {
-                await OrderModel.findOneAndUpdate(
-                    {extOrderId},
-                    {$set: {orderId, extOrderId, productsIds, productsById: products}},
-                    {'new': true, upsert: true, runValidators: true, setDefaultsOnInsert: true}
-                ).exec();
-            } catch (e) {
-                // TODO: Log it
-            }
+                const extOrderId = res.createOrderRequestConfig.data.extOrderId;
 
-            try {
-                await mailTransporter.sendMail({
-                    from: 'OFFSHOP <no-reply@offshop.com>',
-                    to: `${buyer.firstName} ${buyer.lastName} <${buyer.email}>`,
-                    subject: `${description} ${extOrderId}`,
-                    html: `<p><b>Hello, ${buyer.firstName} ${buyer.lastName}</b></p><p>Your order (No. ${extOrderId}) has been initiated.</p>`
+                const {data: {orderId, redirectUri}} = await axios(res.createOrderRequestConfig);
+
+                try {
+                    await OrderModel.findOneAndUpdate(
+                        {extOrderId},
+                        {
+                            $set: {
+                                orderId,
+                                extOrderId,
+                                productsIds: req.body.productsIds,
+                                productsById: req.body.products
+                            }
+                        },
+                        {'new': true, upsert: true, runValidators: true, setDefaultsOnInsert: true}
+                    ).exec();
+                } catch (e) {
+                    // TODO: Log it
+                }
+
+                try {
+                    await mailTransporter.sendMail({
+                        from: 'OFFSHOP <no-reply@offshop.com>',
+                        to: `${req.body.buyer.firstName} ${req.body.buyer.lastName} <${req.body.buyer.email}>`,
+                        subject: `${req.body.description} ${extOrderId}`,
+                        html: `<p><b>Hello, ${req.body.buyer.firstName} ${req.body.buyer.lastName}</b></p><p>Your order (No. ${extOrderId}) has been initiated.</p>`
+                    });
+                } catch (e) {
+                    // TODO: Log it
+                }
+
+                res.json({
+                    extOrderId,
+                    redirectUri,
+                    productsIds: req.body.productsIds,
                 });
-            } catch (e) {
-                // TODO: Log it
+            } catch (err) {
+                next(err);
             }
-
-            res.json({
-                extOrderId,
-                redirectUri,
-                productsIds,
-            });
-        } catch (err) {
-            next(err);
-        }
-    });
+        });
 
     // OrderRetrieveRequest
     router.get('/:extOrderId', accessTokenCheck, (req, res, next) => {
