@@ -12,7 +12,7 @@ module.exports = (config) => {
                 headers: {'Content-Type': 'application/x-www-form-urlencoded'}
             });
 
-            const {data: {payByLinks = []}} = await axios({
+            const {data: {cardTokens, payByLinks, pexTokens}} = await axios({
                 url: `${process.env.PAYU_API}/paymethods`,
                 method: 'get',
                 headers: {
@@ -24,7 +24,7 @@ module.exports = (config) => {
                 validateStatus: status => status === 200,
             });
 
-            res.json(payByLinks.filter(i => i.status === 'ENABLED' && ['c', 'ap'].indexOf(i.value) > -1));
+            res.json({cardTokens, payByLinks, pexTokens});
         } catch (err) {
             next(err);
         }
