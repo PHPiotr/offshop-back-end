@@ -32,8 +32,8 @@ module.exports = (io, router, OrderModel, ProductModel) => {
                 const productsList = await ProductModel.find({_id: {$in: productsIds}});
                 const productsById = {};
                 productsList.forEach(function (doc, index) {
-                    const newQuantity = doc.quantity - products[index].quantity;
-                    doc.quantity = newQuantity < 0 ? 0 : newQuantity;
+                    const newQuantity = doc.stock - products[index].quantity;
+                    doc.stock = newQuantity < 0 ? 0 : newQuantity;
                     doc.save();
                     productsById[doc._id.toString()] = doc;
                 });
