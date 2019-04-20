@@ -24,7 +24,11 @@ module.exports = (config) => {
                 validateStatus: status => status === 200,
             });
 
-            res.json({cardTokens, payByLinks, pexTokens});
+            res.json({
+                cardTokens: cardTokens.filter(({status}) => status === 'ENABLED'),
+                payByLinks: payByLinks.filter(({status}) => status === 'ENABLED'),
+                pexTokens: pexTokens.filter(({status}) => status === 'ENABLED')
+            });
         } catch (err) {
             next(err);
         }
