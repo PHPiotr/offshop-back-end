@@ -29,6 +29,7 @@
   },
   "scripts": {
     "dev": "nodemon index",
+    "dev:serve": "ssh -o ServerAliveInterval=600 -R offshop-back-end.serveo.net:80:localhost:9003 serveo.net",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
