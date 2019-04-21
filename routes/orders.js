@@ -4,8 +4,8 @@ const orderCreateParamsCheck = require('../middleware/orderCreateParamsCheck');
 const verifyNotificationSignature = require('../middleware/verifyNotificationSignature');
 const productsCheck = require('../middleware/productsCheck');
 const setCreateOrderRequestConfig = require('../middleware/setCreateOrderRequestConfig');
+const sendMail = require('../utils/sendMail');
 const axios = require('axios');
-const mailTransporter = require('../utils/mailTransporter');
 
 module.exports = (io, router, OrderModel, ProductModel) => {
 
@@ -34,8 +34,8 @@ module.exports = (io, router, OrderModel, ProductModel) => {
                 productsList.forEach(async function (doc, index) {
                     const newQuantity = doc.stock - products[index].quantity;
                     doc.stock = newQuantity < 0 ? 0 : newQuantity;
+                    productsById[doc.id] = doc;
                     await doc.save();
-                    productsById[doc._id.toString()] = doc;
                 });
                 io.emit('quantities', {productsIds, productsById});
             }
@@ -97,7 +97,7 @@ module.exports = (io, router, OrderModel, ProductModel) => {
                 }
 
                 try {
-                    await mailTransporter.sendMail({
+                    await sendMail({
                         from: 'OFFSHOP <no-reply@offshop.com>',
                         to: `${req.body.buyer.firstName} ${req.body.buyer.lastName} <${req.body.buyer.email}>`,
                         subject: `${req.body.description} ${extOrderId}`,
