@@ -38,6 +38,16 @@ module.exports = (io, router, OrderModel, ProductModel) => {
                     await doc.save();
                 });
                 io.emit('quantities', {productsIds, productsById});
+                try {
+                    await sendMail({
+                        from: 'OFFSHOP <no-reply@offshop.com>',
+                        to: `${updatedOrder.buyer.firstName} ${updatedOrder.buyer.lastName} <${updatedOrder.buyer.email}>`,
+                        subject: updatedOrder.description,
+                        html: `<p><b>Hello, ${updatedOrder.buyer.firstName} ${updatedOrder.buyer.lastName}</b></p><p>Your order (No. ${updatedOrder.extOrderId.toString()}) has been completed.</p>`
+                    });
+                } catch (e) {
+                    // TODO: Log it
+                }
             }
 
             if (status !== 'REJECTED') {
@@ -76,7 +86,6 @@ module.exports = (io, router, OrderModel, ProductModel) => {
         async (req, res, next) => {
             try {
                 const extOrderId = res.createOrderRequestConfig.data.extOrderId;
-
                 const {data: {orderId, redirectUri}} = await axios(res.createOrderRequestConfig);
 
                 try {
@@ -92,17 +101,6 @@ module.exports = (io, router, OrderModel, ProductModel) => {
                         },
                         {'new': true, upsert: true, runValidators: true, setDefaultsOnInsert: true}
                     ).exec();
-                } catch (e) {
-                    // TODO: Log it
-                }
-
-                try {
-                    await sendMail({
-                        from: 'OFFSHOP <no-reply@offshop.com>',
-                        to: `${req.body.buyer.firstName} ${req.body.buyer.lastName} <${req.body.buyer.email}>`,
-                        subject: `${req.body.description} ${extOrderId}`,
-                        html: `<p><b>Hello, ${req.body.buyer.firstName} ${req.body.buyer.lastName}</b></p><p>Your order (No. ${extOrderId}) has been initiated.</p>`
-                    });
                 } catch (e) {
                     // TODO: Log it
                 }
