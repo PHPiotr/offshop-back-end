@@ -11,24 +11,23 @@ const transport = nodemailer.createTransport({
     }
 });
 
-const email = new Email({
-    message: {
-        from: process.env.EMAIL_ACCOUNT_FROM,
-    },
-    send: true,
-    transport,
-    juice: true,
-    juiceResources: {
-        preserveImportant: true,
-        webResources: {
-            relativeTo: path.join(__dirname, '../', 'emails', template),
-            images: true,
-        }
-    }
-});
-
 const sendMail = async (template, data) => {
     try {
+        const email = new Email({
+            message: {
+                from: process.env.EMAIL_ACCOUNT_FROM,
+            },
+            send: true,
+            transport,
+            juice: true,
+            juiceResources: {
+                preserveImportant: true,
+                webResources: {
+                    relativeTo: path.join(__dirname, '../', 'emails', template),
+                    images: true,
+                }
+            }
+        });
         await email.send({
             template: path.join(__dirname, '../', 'emails', template),
             message: {
