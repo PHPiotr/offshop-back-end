@@ -39,12 +39,7 @@ module.exports = (io, router, OrderModel, ProductModel) => {
                 });
                 io.emit('quantities', {productsIds, productsById});
                 try {
-                    await sendMail({
-                        from: 'OFFSHOP <no-reply@offshop.com>',
-                        to: `${updatedOrder.buyer.firstName} ${updatedOrder.buyer.lastName} <${updatedOrder.buyer.email}>`,
-                        subject: updatedOrder.description,
-                        html: `<p><b>Hello, ${updatedOrder.buyer.firstName} ${updatedOrder.buyer.lastName}</b></p><p>Your order (No. ${updatedOrder.extOrderId.toString()}) has been completed.</p>`
-                    });
+                    await sendMail('order', updatedOrder);
                 } catch (e) {
                     // TODO: Log it
                 }
@@ -81,7 +76,7 @@ module.exports = (io, router, OrderModel, ProductModel) => {
     router.post('/',
         accessTokenCheck,
         orderCreateParamsCheck,
-        productsCheck(ProductModel),
+        //productsCheck(ProductModel),
         setCreateOrderRequestConfig,
         async (req, res, next) => {
             try {
@@ -96,7 +91,10 @@ module.exports = (io, router, OrderModel, ProductModel) => {
                                 orderId,
                                 extOrderId,
                                 productsIds: req.body.productsIds,
-                                productsById: req.body.products
+                                productsById: req.body.products,
+                                deliveryMethod: req.body.deliveryMethod,
+                                totalWeight: req.body.totalWeight,
+                                totalWithoutDelivery: req.body.totalWithoutDelivery,
                             }
                         },
                         {'new': true, upsert: true, runValidators: true, setDefaultsOnInsert: true}

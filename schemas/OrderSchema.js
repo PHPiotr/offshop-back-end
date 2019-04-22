@@ -20,7 +20,10 @@ const OrderSchema = new Schema({
     description: String,
     currencyCode: String,
     totalAmount: String,
+    totalWithoutDelivery: Number,
+    totalWeight: Number,
     buyer: Object,
+    deliveryMethod: Object,
     payMethod: Object,
     status: {
         type: String,
