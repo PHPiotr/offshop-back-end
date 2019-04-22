@@ -14,6 +14,7 @@ const orders = require('./routes/orders');
 const categories = require('./routes/categories');
 const products = require('./routes/products');
 const deliveryMethods = require('./routes/deliveryMethods');
+const payMethods = require('./routes/payMethods');
 const errorHandler = require('./routes/errorHandler');
 const jwtCheck = require('./middleware/jwtCheck');
 const fileUpload = require('express-fileupload');
@@ -53,6 +54,7 @@ app.use('/delivery-methods', deliveryMethods({
     DeliveryMethodModel,
     router: express.Router(),
 }));
+app.use('/pay-methods', payMethods({router: express.Router()}));
 app.all('/admin/*', jwtCheck());
 app.get('/admin', jwtCheck(), (req, res) => {
     res.send('hello')

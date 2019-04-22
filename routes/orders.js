@@ -3,6 +3,8 @@ const accessTokenCheck = require('../middleware/accessTokenCheck');
 const orderCreateParamsCheck = require('../middleware/orderCreateParamsCheck');
 const verifyNotificationSignature = require('../middleware/verifyNotificationSignature');
 const productsCheck = require('../middleware/productsCheck');
+const setCreateOrderRequestConfig = require('../middleware/setCreateOrderRequestConfig');
+const sendMail = require('../utils/sendMail');
 const axios = require('axios');
 
 module.exports = (io, router, OrderModel, ProductModel) => {
@@ -29,13 +31,18 @@ module.exports = (io, router, OrderModel, ProductModel) => {
             if (status === 'COMPLETED') {
                 const productsList = await ProductModel.find({_id: {$in: productsIds}});
                 const productsById = {};
-                productsList.forEach(function(doc, index) {
-                    const newQuantity = doc.quantity - products[index].quantity;
-                    doc.quantity = newQuantity < 0 ? 0 : newQuantity;
-                    doc.save();
-                    productsById[doc._id.toString()] = doc;
+                productsList.forEach(async function (doc, index) {
+                    const newQuantity = doc.stock - products[index].quantity;
+                    doc.stock = newQuantity < 0 ? 0 : newQuantity;
+                    productsById[doc.id] = doc;
+                    await doc.save();
                 });
                 io.emit('quantities', {productsIds, productsById});
+                try {
+                    await sendMail('order', updatedOrder);
+                } catch (e) {
+                    // TODO: Log it
+                }
             }
 
             if (status !== 'REJECTED') {
@@ -43,97 +50,68 @@ module.exports = (io, router, OrderModel, ProductModel) => {
             }
 
             // Cancel an order and proceed with a refund in case of REJECTED
-            request.post({
+            const {data: {access_token}} = await axios({
                 url: `${process.env.PAYU_HOST}/pl/standard/user/oauth/authorize`,
-                body: `grant_type=client_credentials&client_id=${merchantPosId}&client_secret=${process.env.PAYU_CLIENT_SECRET}`,
-                headers: {
-                    'Content-Type': 'application/x-www-form-urlencoded',
-                }
-            }, function (err, response, body) {
-                if (err) {
-                    throw err;
-                }
-                const {access_token} = JSON.parse(body);
-                request.delete({
-                    url: `${process.env.PAYU_API}/orders/${order.orderId}`,
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${access_token}`,
-                    },
-                }, function (err, {statusCode}) {
-                    if (err) {
-                        throw err;
-                    }
-                    return res.sendStatus(statusCode);
-                });
+                method: 'post',
+                data: `grant_type=client_credentials&client_id=${merchantPosId}&client_secret=${process.env.PAYU_CLIENT_SECRET}`,
+                headers: {'Content-Type': 'application/x-www-form-urlencoded'}
             });
+            const cancelOrderResponse = await axios({
+                url: `${process.env.PAYU_API}/orders/${order.orderId}`,
+                method: 'delete',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${access_token}`,
+                },
+                maxRedirects: 0,
+                validateStatus: status => status === 200,
+            });
+            return res.sendStatus(cancelOrderResponse.status);
         } catch (err) {
             next(err);
         }
     });
 
     // OrderCreateRequest
-    router.post('/', accessTokenCheck, orderCreateParamsCheck, productsCheck(ProductModel), async (req, res, next) => {
+    router.post('/',
+        accessTokenCheck,
+        orderCreateParamsCheck,
+        //productsCheck(ProductModel),
+        setCreateOrderRequestConfig,
+        async (req, res, next) => {
+            try {
+                const extOrderId = res.createOrderRequestConfig.data.extOrderId;
+                const {data: {orderId, redirectUri}} = await axios(res.createOrderRequestConfig);
 
-        const {
-            payMethods,
-            merchantPosId,
-            description,
-            currencyCode,
-            totalAmount,
-            buyer,
-            settings,
-            products,
-            productsIds,
-            continueUrl,
-            notifyUrl,
-        } = req.body;
-        const extOrderId = req.app.locals.db.Types.ObjectId().toString();
-        const customerIp = req.ip;
+                try {
+                    await OrderModel.findOneAndUpdate(
+                        {extOrderId},
+                        {
+                            $set: {
+                                orderId,
+                                extOrderId,
+                                productsIds: req.body.productsIds,
+                                productsById: req.body.products,
+                                deliveryMethod: req.body.deliveryMethod,
+                                totalWeight: req.body.totalWeight,
+                                totalWithoutDelivery: req.body.totalWithoutDelivery,
+                            }
+                        },
+                        {'new': true, upsert: true, runValidators: true, setDefaultsOnInsert: true}
+                    ).exec();
+                } catch (e) {
+                    // TODO: Log it
+                }
 
-        const createOrderRequestConfig = {
-            url: `${process.env.PAYU_API}/orders`,
-            method: 'post',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `${req.headers.authorization}`,
-            },
-            data: {
-                extOrderId,
-                payMethods,
-                notifyUrl,
-                continueUrl,
-                customerIp,
-                merchantPosId,
-                description: `${description} ${extOrderId}`,
-                currencyCode,
-                totalAmount,
-                buyer,
-                settings,
-                products: productsIds.map(i => products[i]),
-            },
-            maxRedirects: 0,
-            validateStatus: function (status) {
-                return status === 200 || status === 302;
-            },
-        };
-
-        try {
-            const {data: {orderId, redirectUri}} = await axios(createOrderRequestConfig);
-            await OrderModel.findOneAndUpdate(
-                {extOrderId},
-                {$set: {orderId, extOrderId, productsIds, productsById: products}},
-                {'new': true, upsert: true, runValidators: true, setDefaultsOnInsert: true}
-            ).exec();
-            res.json({
-                extOrderId,
-                redirectUri,
-                productsIds,
-            });
-        } catch (err) {
-            next(err);
-        }
-    });
+                res.json({
+                    extOrderId,
+                    redirectUri,
+                    productsIds: req.body.productsIds,
+                });
+            } catch (err) {
+                next(err);
+            }
+        });
 
     // OrderRetrieveRequest
     router.get('/:extOrderId', accessTokenCheck, (req, res, next) => {

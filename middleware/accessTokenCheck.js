@@ -3,7 +3,7 @@ module.exports = (req, res, next) => {
     let err = null;
     if (typeof accessToken !== 'string' || !accessToken.trim()) {
         res.status(401);
-        err = Error('Invalid access token');
+        err = new Error('Invalid access token');
     }
     return next(err);
 };
