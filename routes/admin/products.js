@@ -13,9 +13,12 @@ module.exports = (config) => {
         }
     });
 
-    router.get('/:slug', async (req, res, next) => {
+    router.get('/:productId', async (req, res, next) => {
         try {
-            const product = await ProductModel.findOne({slug: {$eq: req.params.slug}}).exec();
+            const product = await ProductModel.findById(req.params.productId).exec();
+            if (!product) {
+                return res.send(404);
+            }
             res.json(product);
         } catch (e) {
             next(e);
