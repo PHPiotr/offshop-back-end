@@ -29,6 +29,9 @@ const productsManagement = require('./routes/admin/products');
 const jwtCheck = require('./middleware/jwtCheck');
 const queryOptionsCheck = require('./middleware/queryOptionsCheck');
 
+// utils
+const removeFile = require('./utils/removeFile');
+
 // models
 const OrderModel = require('./models/OrderModel');
 const ProductModel = require('./models/ProductModel');
@@ -66,6 +69,7 @@ app.use('/admin/products', productsManagement({
     router: express.Router(),
     queryOptionsCheck,
     resize: (buffer, dimensions, toFile) => sharp(buffer).resize(dimensions).toFile(toFile),
+    removeFile,
 }));
 app.use('/delivery-methods', deliveryMethods({
     io,

@@ -1,6 +1,6 @@
 module.exports = (config) => {
 
-    const {io, router, ProductModel, queryOptionsCheck, resize} = config;
+    const {io, router, ProductModel, queryOptionsCheck, resize, removeFile} = config;
 
     router.get('/', queryOptionsCheck(ProductModel), async (req, res, next) => {
         try {
@@ -55,8 +55,27 @@ module.exports = (config) => {
         res.json({});
     });
 
-    router.delete('/:slug', (req, res, next) => {
-        res.json({});
+    router.delete('/:productId', async (req, res, next) => {
+        try {
+            const product = await ProductModel.findById(req.params.productId).exec();
+            if (!product) {
+                return res.send(404);
+            }
+            await ProductModel.deleteOne({ _id: product._id });
+            try {
+                await Promise.all([
+                    removeFile(`./public/images/products/${product.slug}.tile.png`),
+                    removeFile(`./public/images/products/${product.slug}.avatar.png`),
+                ]);
+            } catch (e) {
+                // Just log it
+                console.error(e);
+            } finally {
+                res.sendStatus(204);
+            }
+        } catch (e) {
+            return next(e);
+        }
     });
 
     return router;
