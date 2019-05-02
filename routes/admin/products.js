@@ -1,6 +1,6 @@
 module.exports = (config) => {
 
-    const {io, router, ProductModel, queryOptionsCheck, resize, removeFile} = config;
+    const {io, router, ProductModel, queryOptionsCheck, resizeFile, removeFile, renameFile} = config;
 
     router.get('/', queryOptionsCheck(ProductModel), async (req, res, next) => {
         try {
@@ -34,12 +34,11 @@ module.exports = (config) => {
 
             const product = await new ProductModel(req.body).save();
 
-            const uploadedFile = req.files.img;
-            const buffer = uploadedFile.data;
+            const buffer = req.files.img.data;
             const {slug} = product;
             await Promise.all([
-                resize(buffer, {width: 320, height: 240}, `./public/images/products/${slug}.tile.png`),
-                resize(buffer, {width: 40, height: 40}, `./public/images/products/${slug}.avatar.png`),
+                resizeFile(buffer, {width: 320, height: 240}, `./public/images/products/${slug}.tile.png`),
+                resizeFile(buffer, {width: 40, height: 40}, `./public/images/products/${slug}.avatar.png`),
             ]);
 
             io.emit('createProduct', product);
@@ -50,12 +49,62 @@ module.exports = (config) => {
         }
     });
 
-    router.put('/:slug', (req, res, next) => {
-        res.json({});
-    });
+    router.put('/:productId', async (req, res, next) => {
+        try {
+            const currentProduct = await ProductModel.findById(req.params.productId).exec();
+            if (!currentProduct) {
+                return res.send(404);
+            }
 
-    router.patch('/:slug', (req, res, next) => {
-        res.json({});
+            const updatedProduct = await ProductModel.findByIdAndUpdate(
+                req.params.productId,
+                {$set: req.body},
+                {runValidators: true, new: true}
+            );
+
+            if (Object.keys(req.files || {}).length) {
+                const buffer = req.files.img.data;
+                try {
+                    await Promise.all([
+                        removeFile(`./public/images/products/${currentProduct.slug}.tile.png`),
+                        removeFile(`./public/images/products/${currentProduct.slug}.avatar.png`),
+                    ]);
+                } catch (e) {
+                    // Just log it
+                    console.error(e);
+                }
+                try {
+                    await Promise.all([
+                        resizeFile(buffer, {width: 320, height: 240}, `./public/images/products/${updatedProduct.slug}.tile.png`),
+                        resizeFile(buffer, {width: 40, height: 40}, `./public/images/products/${updatedProduct.slug}.avatar.png`),
+                    ]);
+                } catch (e) {
+                    // Just log it
+                    console.error(e);
+                }
+            } else {
+                if (currentProduct.slug !== updatedProduct.slug) {
+                    try {
+                        await Promise.all([
+                            renameFile(`./public/images/products/${currentProduct.slug}.tile.png`, `./public/images/products/${updatedProduct.slug}.tile.png`),
+                            renameFile(`./public/images/products/${currentProduct.slug}.avatar.png`, `./public/images/products/${updatedProduct.slug}.avatar.png`),
+                        ]);
+                    } catch (e) {
+                        // Just log it
+                        console.error(e);
+                    }
+                }
+            }
+
+            if (!updatedProduct) {
+                return res.sendStatus(404);
+            }
+            io.emit('updateProduct', updatedProduct);
+            res.set('Location', `${process.env.API_URL}/admin/products/${updatedProduct.id}`);
+            res.json(updatedProduct);
+        } catch (e) {
+            return next(e);
+        }
     });
 
     router.delete('/:productId', async (req, res, next) => {
@@ -74,6 +123,7 @@ module.exports = (config) => {
                 // Just log it
                 console.error(e);
             } finally {
+                io.emit('deleteProduct', product);
                 res.sendStatus(204);
             }
         } catch (e) {

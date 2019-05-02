@@ -11,7 +11,6 @@ const path = require('path');
 const cors = require('cors');
 const helmet = require('helmet');
 const fileUpload = require('express-fileupload');
-const sharp = require('sharp');
 
 // routes
 const authorize = require('./routes/authorize');
@@ -30,7 +29,9 @@ const jwtCheck = require('./middleware/jwtCheck');
 const queryOptionsCheck = require('./middleware/queryOptionsCheck');
 
 // utils
+const resizeFile = require('./utils/resizeFile');
 const removeFile = require('./utils/removeFile');
+const renameFile = require('./utils/renameFile');
 
 // models
 const OrderModel = require('./models/OrderModel');
@@ -68,8 +69,9 @@ app.use('/admin/products', productsManagement({
     ProductModel,
     router: express.Router(),
     queryOptionsCheck,
-    resize: (buffer, dimensions, toFile) => sharp(buffer).resize(dimensions).toFile(toFile),
+    resizeFile,
     removeFile,
+    renameFile,
 }));
 app.use('/delivery-methods', deliveryMethods({
     io,
