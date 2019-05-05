@@ -1,6 +1,6 @@
 module.exports = (config) => {
 
-    const {io, router, ProductModel, queryOptionsCheck, resizeFile, removeFile, renameFile} = config;
+    const {io, router, ProductModel, queryOptionsCheck, fileUtils} = config;
 
     router.get('/', queryOptionsCheck(ProductModel), async (req, res, next) => {
         try {
@@ -37,8 +37,8 @@ module.exports = (config) => {
             const buffer = req.files.img.data;
             const {slug} = product;
             await Promise.all([
-                resizeFile(buffer, {width: 320, height: 240}, `./public/images/products/${slug}.tile.png`),
-                resizeFile(buffer, {width: 40, height: 40}, `./public/images/products/${slug}.avatar.png`),
+                fileUtils.resizeFile(buffer, {width: 320, height: 240}, `./public/images/products/${slug}.tile.png`),
+                fileUtils.resizeFile(buffer, {width: 40, height: 40}, `./public/images/products/${slug}.avatar.png`),
             ]);
 
             io.emit('createProduct', product);
@@ -66,8 +66,8 @@ module.exports = (config) => {
                 const buffer = req.files.img.data;
                 try {
                     await Promise.all([
-                        removeFile(`./public/images/products/${currentProduct.slug}.tile.png`),
-                        removeFile(`./public/images/products/${currentProduct.slug}.avatar.png`),
+                        fileUtils.removeFile(`./public/images/products/${currentProduct.slug}.tile.png`),
+                        fileUtils.removeFile(`./public/images/products/${currentProduct.slug}.avatar.png`),
                     ]);
                 } catch (e) {
                     // Just log it
@@ -75,8 +75,8 @@ module.exports = (config) => {
                 }
                 try {
                     await Promise.all([
-                        resizeFile(buffer, {width: 320, height: 240}, `./public/images/products/${updatedProduct.slug}.tile.png`),
-                        resizeFile(buffer, {width: 40, height: 40}, `./public/images/products/${updatedProduct.slug}.avatar.png`),
+                        fileUtils.resizeFile(buffer, {width: 320, height: 240}, `./public/images/products/${updatedProduct.slug}.tile.png`),
+                        fileUtils.resizeFile(buffer, {width: 40, height: 40}, `./public/images/products/${updatedProduct.slug}.avatar.png`),
                     ]);
                 } catch (e) {
                     // Just log it
@@ -86,8 +86,8 @@ module.exports = (config) => {
                 if (currentProduct.slug !== updatedProduct.slug) {
                     try {
                         await Promise.all([
-                            renameFile(`./public/images/products/${currentProduct.slug}.tile.png`, `./public/images/products/${updatedProduct.slug}.tile.png`),
-                            renameFile(`./public/images/products/${currentProduct.slug}.avatar.png`, `./public/images/products/${updatedProduct.slug}.avatar.png`),
+                            fileUtils.renameFile(`./public/images/products/${currentProduct.slug}.tile.png`, `./public/images/products/${updatedProduct.slug}.tile.png`),
+                            fileUtils.renameFile(`./public/images/products/${currentProduct.slug}.avatar.png`, `./public/images/products/${updatedProduct.slug}.avatar.png`),
                         ]);
                     } catch (e) {
                         // Just log it
@@ -116,8 +116,8 @@ module.exports = (config) => {
             await ProductModel.deleteOne({ _id: product._id });
             try {
                 await Promise.all([
-                    removeFile(`./public/images/products/${product.slug}.tile.png`),
-                    removeFile(`./public/images/products/${product.slug}.avatar.png`),
+                    fileUtils.removeFile(`./public/images/products/${product.slug}.tile.png`),
+                    fileUtils.removeFile(`./public/images/products/${product.slug}.avatar.png`),
                 ]);
             } catch (e) {
                 // Just log it

@@ -69,9 +69,11 @@ app.use('/admin/products', productsManagement({
     ProductModel,
     router: express.Router(),
     queryOptionsCheck,
-    resizeFile,
-    removeFile,
-    renameFile,
+    fileUtils: {
+        resizeFile,
+        removeFile,
+        renameFile,
+    },
 }));
 app.use('/delivery-methods', deliveryMethods({
     io,
