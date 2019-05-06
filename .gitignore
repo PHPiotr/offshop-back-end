@@ -1,7 +1,8 @@
 node_modules/
 .idea/
 .env
-/public
+/public/images/products/*
+!/public/images/products/.gitignore
 jspm_packages
 # Serverless directories
 .serverless
