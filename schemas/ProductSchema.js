@@ -42,7 +42,7 @@ const ProductSchema = new Schema({
 });
 
 ProductSchema.pre('save', async function() {
-    this.slug = slugify(this.name, {lower: true});
+    this.slug = slugify(this.slug || this.name, {lower: true});
 });
 
 ProductSchema.set('toJSON', {getters: true});

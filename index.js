@@ -22,6 +22,7 @@ const payMethods = require('./routes/payMethods');
 const errorHandler = require('./routes/errorHandler');
 
 // admin routes
+const deliveryMethodsManagement = require('./routes/admin/deliveryMethods');
 const productsManagement = require('./routes/admin/products');
 
 // middleware
@@ -63,7 +64,15 @@ app.use('/products', products({
     router: express.Router(),
     queryOptionsCheck,
 }));
+app.use('/delivery-methods', deliveryMethods({
+    io,
+    jwtCheck,
+    DeliveryMethodModel,
+    router: express.Router(),
+}));
+app.use('/pay-methods', payMethods({router: express.Router()}));
 
+// admin handlers
 app.use('/admin/products', productsManagement({
     io,
     ProductModel,
@@ -75,13 +84,12 @@ app.use('/admin/products', productsManagement({
         renameFile,
     },
 }));
-app.use('/delivery-methods', deliveryMethods({
+app.use('/admin/delivery-methods', deliveryMethodsManagement({
     io,
-    jwtCheck,
     DeliveryMethodModel,
     router: express.Router(),
+    queryOptionsCheck,
 }));
-app.use('/pay-methods', payMethods({router: express.Router()}));
 
 app.all('*', (req, res, next) => {
     res.status(404);
