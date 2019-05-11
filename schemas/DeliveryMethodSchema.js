@@ -19,6 +19,10 @@ const DeliveryMethodSchema = new Schema({
         type: Number,
         get: getMoney,
     },
+    active: {
+        type: Boolean,
+        default: true,
+    },
 }, {
     timestamps: true,
 });
