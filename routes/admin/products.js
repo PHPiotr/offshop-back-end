@@ -41,6 +41,21 @@ module.exports = (config) => {
                 fileUtils.resizeFile(buffer, {width: 40, height: 40}, `./public/images/products/${slug}.avatar.png`),
             ]);
 
+            const [tileBuffer, avatarBuffer] = await Promise.all([
+                fileUtils.readFile(`./public/images/products/${slug}.tile.png`),
+                fileUtils.readFile(`./public/images/products/${slug}.avatar.png`),
+            ]);
+
+            await Promise.all([
+                fileUtils.s3UploadFile(tileBuffer, `${slug}.tile.png`),
+                fileUtils.s3UploadFile(avatarBuffer, `${slug}.avatar.png`),
+            ]);
+
+            await Promise.all([
+                fileUtils.removeFile(`./public/images/products/${slug}.tile.png`),
+                fileUtils.removeFile(`./public/images/products/${slug}.avatar.png`),
+            ]);
+
             io.emit('createProduct', product);
             res.set('Location', `${process.env.API_URL}/products/${product.slug}`);
             res.status(201).json(product);

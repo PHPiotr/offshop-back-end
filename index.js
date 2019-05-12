@@ -11,6 +11,7 @@ const path = require('path');
 const cors = require('cors');
 const helmet = require('helmet');
 const fileUpload = require('express-fileupload');
+const aws = require('aws-sdk');
 
 // routes
 const authorize = require('./routes/authorize');
@@ -33,6 +34,8 @@ const queryOptionsCheck = require('./middleware/queryOptionsCheck');
 const resizeFile = require('./utils/resizeFile');
 const removeFile = require('./utils/removeFile');
 const renameFile = require('./utils/renameFile');
+const readFile = require('./utils/readFile');
+const s3UploadFile = require('./utils/s3UploadFile');
 
 // models
 const OrderModel = require('./models/OrderModel');
@@ -82,6 +85,15 @@ app.use('/admin/products', productsManagement({
         resizeFile,
         removeFile,
         renameFile,
+        readFile,
+        s3UploadFile: s3UploadFile(new aws.S3({
+            accessKeyId: process.env.AWS_ACCESS_KEY_ID,
+            secretAccessKey:process.env.AWS_SECRET_ACCESS_KEY,
+            region: process.env.AWS_REGION,
+            params: {
+                Bucket: process.env.S3_BUCKET,
+            },
+        })),
     },
 }));
 app.use('/admin/delivery-methods', deliveryMethodsManagement({
