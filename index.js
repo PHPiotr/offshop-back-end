@@ -36,6 +36,7 @@ const removeFile = require('./utils/removeFile');
 const renameFile = require('./utils/renameFile');
 const readFile = require('./utils/readFile');
 const s3UploadFile = require('./utils/s3UploadFile');
+const s3DeleteFiles = require('./utils/s3DeleteFiles');
 
 // models
 const OrderModel = require('./models/OrderModel');
@@ -45,6 +46,14 @@ const DeliveryMethodModel = require('./models/DeliveryMethodModel');
 const PORT = process.env.PORT || 9000;
 const server = http.createServer(app);
 const io = require('socket.io')(server, {pingTimeout: 60000});
+const s3 = new aws.S3({
+    accessKeyId: process.env.AWS_ACCESS_KEY_ID,
+    secretAccessKey:process.env.AWS_SECRET_ACCESS_KEY,
+    region: process.env.AWS_REGION,
+    params: {
+        Bucket: process.env.S3_BUCKET,
+    },
+});
 
 app.use(express.static(path.join(__dirname, 'public')));
 app.use(express.json());
@@ -86,14 +95,8 @@ app.use('/admin/products', productsManagement({
         removeFile,
         renameFile,
         readFile,
-        s3UploadFile: s3UploadFile(new aws.S3({
-            accessKeyId: process.env.AWS_ACCESS_KEY_ID,
-            secretAccessKey:process.env.AWS_SECRET_ACCESS_KEY,
-            region: process.env.AWS_REGION,
-            params: {
-                Bucket: process.env.S3_BUCKET,
-            },
-        })),
+        s3UploadFile: s3UploadFile(s3),
+        s3DeleteFiles: s3DeleteFiles(s3),
     },
 }));
 app.use('/admin/delivery-methods', deliveryMethodsManagement({
