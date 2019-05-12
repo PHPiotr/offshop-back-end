@@ -11,39 +11,46 @@ div(class='card')
       li
         div(class='list-item')
           div(class='avatar')
-            img(src=`https://offshop-back-end.serveo.net/images/products/${productsById[id].slug}.avatar.png`)
+            img(src=`${productPath}/${id}.avatar.jpg`)
           div(class='item-text')
             span(class='primary') #{productsById[id].name} (#{productsById[id].quantity} szt.)
             p(class='secondary')
               span #{(productsById[id].unitPrice / 100).toFixed(2)} zł / szt.
       hr
   if Number(totalAmount) > totalWithoutDelivery
-    li(class='total')
-      div
-        span(class='primary') Razem bez dostawy
-      h6 #{(totalWithoutDelivery / 100).toFixed(2)} zł
+    li
+      div(class='list-item')
+        div(class='item-text')
+          span(class='primary') Razem bez dostawy
+          p(class='secondary')
+            span #{(totalWithoutDelivery / 100).toFixed(2)} zł
     hr
-    li(class='total')
-      div
-        span(class='primary') #{deliveryMethod.name} (#{totalWeight} kg)
-        p(class='secondary') #{deliveryMethod.unitPrice} zł / kg
-      h6(class='normal') #{((Number(totalAmount) - totalWithoutDelivery) / 100).toFixed(2)} zł
-    hr
-    li(class='total')
-      div
-        span(class='primary') Razem z dostawą
-      h6
-        strong #{(Number(totalAmount) / 100).toFixed(2)} zł
+    li
+      div(class='list-item')
+        div(class='item-text')
+          span(class='primary') #{deliveryMethod.name} (#{totalWeight} kg)
+          p(class='secondary')
+            span #{deliveryMethod.unitPrice} zł / kg * #{totalWeight} kg = #{((Number(totalAmount) - totalWithoutDelivery) / 100).toFixed(2)} zł
+      hr
+    li
+      div(class='list-item')
+        div(class='item-text')
+          span(class='primary') Razem z dostawą
+          p(class='secondary')
+            span #{(Number(totalAmount) / 100).toFixed(2)} zł
     hr
   else
-    li(class='total')
-      div
-        span(class='primary')= deliveryMethod.name
-      h6(class='normal') 0.00 zł
+    li
+      div(class='list-item')
+        div(class='item-text')
+          span(class='primary')= deliveryMethod.name
+          p(class='secondary')
+            span 0.00 zł
     hr
-    li(class='total')
-      div
-        span(class='primary') Razem
-      h6
-        strong #{(Number(totalAmount) / 100).toFixed(2)} zł
+    li
+      div(class='list-item')
+        div(class='item-text')
+          span(class='primary') Razem
+          p(class='secondary')
+            span #{(Number(totalAmount) / 100).toFixed(2)} zł
     hr

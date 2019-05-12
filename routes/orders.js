@@ -39,9 +39,9 @@ module.exports = (io, router, OrderModel, ProductModel) => {
                 });
                 io.emit('quantities', {productsIds, productsById});
                 try {
-                    await sendMail('order', updatedOrder);
+                    await sendMail('order', Object.assign(updatedOrder, {productPath: process.env.PRODUCT_PATH}));
                 } catch (e) {
-                    // TODO: Log it
+                    console.error(e);
                 }
             }
 
