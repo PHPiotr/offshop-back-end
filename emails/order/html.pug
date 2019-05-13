@@ -11,7 +11,7 @@ div(class='card')
       li
         div(class='list-item')
           div(class='avatar')
-            img(src=`http://offshop-1.s3.eu-central-1.amazonaws.com/${id}.avatar.jpg`)
+            img(src=`http://offshop-1.s3.eu-central-1.amazonaws.com/${id}.avatar.jpg` alt=`${productsById[id].name}`)
           div(class='item-text')
             span(class='primary') #{productsById[id].name} (#{productsById[id].quantity} szt.)
             p(class='secondary')
@@ -31,7 +31,7 @@ div(class='card')
           span(class='primary') #{deliveryMethod.name} (#{totalWeight} kg)
           p(class='secondary')
             span #{deliveryMethod.unitPrice} zł / kg * #{totalWeight} kg = #{((Number(totalAmount) - totalWithoutDelivery) / 100).toFixed(2)} zł
-      hr
+    hr
     li
       div(class='list-item')
         div(class='item-text')
