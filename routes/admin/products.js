@@ -5,19 +5,23 @@ module.exports = (config) => {
     const processUpload = async (buffer, id) => {
         try {
             let data = [];
+            const cardPath = `./public/images/products/${id}.card.jpg`;
             const tilePath = `./public/images/products/${id}.tile.jpg`;
             const avatarPath = `./public/images/products/${id}.avatar.jpg`;
             await Promise.all([
+                fileUtils.resizeFile(buffer, {width: 800, height: 600}, cardPath),
                 fileUtils.resizeFile(buffer, {width: 320, height: 240}, tilePath),
                 fileUtils.resizeFile(buffer, {width: 40, height: 40}, avatarPath),
             ]);
             try {
-                const [tileBuffer, avatarBuffer] = await Promise.all([
+                const [cardBuffer, tileBuffer, avatarBuffer] = await Promise.all([
+                    fileUtils.readFile(cardPath),
                     fileUtils.readFile(tilePath),
                     fileUtils.readFile(avatarPath),
                 ]);
 
                 data = await Promise.all([
+                    fileUtils.s3UploadFile(cardBuffer, `${id}.card.jpg`),
                     fileUtils.s3UploadFile(tileBuffer, `${id}.tile.jpg`),
                     fileUtils.s3UploadFile(avatarBuffer, `${id}.avatar.jpg`),
                 ]);
@@ -26,6 +30,7 @@ module.exports = (config) => {
             }
 
             await Promise.all([
+                fileUtils.removeFile(cardPath),
                 fileUtils.removeFile(tilePath),
                 fileUtils.removeFile(avatarPath),
             ]);
