@@ -16,7 +16,11 @@ module.exports = (config) => {
     router.get('/:slug', async (req, res, next) => {
         try {
             const product = await ProductModel.findOne({slug: {$eq: req.params.slug}}, {active: 0}).exec();
-            res.json(product);
+            if (product) {
+                res.json(product);
+            } else {
+                res.sendStatus(404);
+            }
         } catch (e) {
             next(e);
         }
