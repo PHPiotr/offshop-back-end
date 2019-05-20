@@ -17,6 +17,21 @@ const ProductSchema = new Schema({
         trim: true,
         unique: true,
     },
+    description: {
+        type: String,
+        required: true,
+        trim: true,
+        unique: true,
+        minlength: 100,
+        maxlength: 160,
+    },
+    longDescription: {
+        type: String,
+        trim: true,
+        unique: true,
+        minlength: 250,
+        maxlength: 1000,
+    },
     categoryId: {
         type: String,
     },
