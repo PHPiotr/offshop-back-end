@@ -3,13 +3,15 @@ const accessTokenCheck = require('../middleware/accessTokenCheck');
 const orderCreateParamsCheck = require('../middleware/orderCreateParamsCheck');
 const verifyNotificationSignature = require('../middleware/verifyNotificationSignature');
 const productsCheckMiddleware = require('../middleware/productsCheck');
+const deliveryMethodCheckMiddleware = require('../middleware/deliveryMethodCheck');
 const setCreateOrderRequestConfig = require('../middleware/setCreateOrderRequestConfig');
 const sendMail = require('../utils/sendMail');
 const axios = require('axios');
 
-module.exports = (io, router, OrderModel, ProductModel) => {
+module.exports = (io, router, OrderModel, ProductModel, DeliveryMethodModel) => {
 
     const productsCheck = productsCheckMiddleware(ProductModel);
+    const deliveryMethodCheck = deliveryMethodCheckMiddleware(DeliveryMethodModel);
 
     router.post('/notify', verifyNotificationSignature, async (req, res, next) => {
 
@@ -79,6 +81,7 @@ module.exports = (io, router, OrderModel, ProductModel) => {
         accessTokenCheck,
         orderCreateParamsCheck,
         productsCheck,
+        deliveryMethodCheck,
         setCreateOrderRequestConfig,
         async (req, res, next) => {
             try {

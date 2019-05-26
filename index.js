@@ -69,7 +69,7 @@ app.use(cors({
 app.locals.db = db;
 app.all('/admin/*', jwtCheck());
 app.use('/authorize', authorize);
-app.use('/orders', orders(io, express.Router(), OrderModel, ProductModel));
+app.use('/orders', orders(io, express.Router(), OrderModel, ProductModel, DeliveryMethodModel));
 app.use('/categories', categories);
 app.use('/products', products({
     ProductModel,
