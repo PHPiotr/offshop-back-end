@@ -1,11 +1,15 @@
 const productsCheck = ProductModel => async (req, res, next) => {
     try {
         const {body: {products = {}, productsIds = []}} = req;
-        if (!productsIds.length) {
+        const productsIdsLength = productsIds.length;
+        if (!productsIdsLength) {
             res.status(400);
             return next(new Error('Empty products ids'));
         }
-        productsIds.forEach(productId => {
+        let totalWeight = Number(req.body.totalWeight) || 0;
+        let totalWithoutDelivery = 0;
+
+        productsIds.forEach((productId, index) => {
             const productData = products[productId];
             if (!productData) {
                 res.status(400);
@@ -25,7 +29,19 @@ const productsCheck = ProductModel => async (req, res, next) => {
                     res.status(400);
                     return next(new Error('Wrong product name'));
                 }
-                next();
+                totalWeight -= product.weight * 100 * productData.quantity / 100;
+                totalWithoutDelivery += Number(productData.unitPrice) * productData.quantity;
+                if (productsIdsLength === index + 1) {
+                    if (totalWeight !== 0) {
+                        res.status(400);
+                        return next(new Error('Wrong total weight'));
+                    }
+                    if (totalWithoutDelivery !== req.body.totalWithoutDelivery) {
+                        res.status(400);
+                        return next(new Error('Wrong total amount'));
+                    }
+                    next(err);
+                }
             });
         });
     } catch (err) {
