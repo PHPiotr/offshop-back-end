@@ -13,7 +13,7 @@ const productsCheck = ProductModel => async (req, res, next) => {
             }
             ProductModel.findById(productId, function(err, product) {
                 const {unitPrice, stock, name} = product;
-                if (productData.unitPrice !== unitPrice * 100) {
+                if (Number(productData.unitPrice) !== unitPrice * 100) {
                     res.status(400);
                     return next(new Error('Wrong product unit price'));
                 }
