@@ -1,4 +1,4 @@
-const productsCheck = ProductModel => (req, res, next) => {
+const productsCheck = ProductModel => async (req, res, next) => {
     try {
         const {body: {products = {}, productsIds = []}} = req;
         if (!productsIds.length) {
@@ -13,7 +13,7 @@ const productsCheck = ProductModel => (req, res, next) => {
             }
             ProductModel.findById(productId, function(err, product) {
                 const {unitPrice, stock, name} = product;
-                if (productData.unitPrice / 100 !== parseFloat(unitPrice)) {
+                if (productData.unitPrice !== unitPrice * 100) {
                     res.status(400);
                     return next(new Error('Wrong product unit price'));
                 }
@@ -30,7 +30,7 @@ const productsCheck = ProductModel => (req, res, next) => {
         });
     } catch (err) {
         res.status(400);
-        next(err);
+        return next(err);
     }
 };
 

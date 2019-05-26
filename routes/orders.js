@@ -2,12 +2,14 @@ const request = require('request');
 const accessTokenCheck = require('../middleware/accessTokenCheck');
 const orderCreateParamsCheck = require('../middleware/orderCreateParamsCheck');
 const verifyNotificationSignature = require('../middleware/verifyNotificationSignature');
-const productsCheck = require('../middleware/productsCheck');
+const productsCheckMiddleware = require('../middleware/productsCheck');
 const setCreateOrderRequestConfig = require('../middleware/setCreateOrderRequestConfig');
 const sendMail = require('../utils/sendMail');
 const axios = require('axios');
 
 module.exports = (io, router, OrderModel, ProductModel) => {
+
+    const productsCheck = productsCheckMiddleware(ProductModel);
 
     router.post('/notify', verifyNotificationSignature, async (req, res, next) => {
 
@@ -76,7 +78,7 @@ module.exports = (io, router, OrderModel, ProductModel) => {
     router.post('/',
         accessTokenCheck,
         orderCreateParamsCheck,
-        //productsCheck(ProductModel),
+        productsCheck,
         setCreateOrderRequestConfig,
         async (req, res, next) => {
             try {
