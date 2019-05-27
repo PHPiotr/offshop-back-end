@@ -4,6 +4,7 @@ const CategorySchema = require('./CategorySchema');
 const slugify = require('slugify');
 
 const getMoney = require('../utils/getMoney');
+const getWeight = require('../utils/getWeight');
 
 const ProductSchema = new Schema({
     name: {
@@ -51,6 +52,7 @@ const ProductSchema = new Schema({
     weight: {
         type: Number,
         required: true,
+        get: getWeight,
     },
 }, {
     timestamps: true,
