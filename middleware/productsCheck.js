@@ -3,47 +3,39 @@ const productsCheck = ProductModel => async (req, res, next) => {
         const {body: {products = {}, productsIds = []}} = req;
         const productsIdsLength = productsIds.length;
         if (!productsIdsLength) {
-            res.status(400);
-            return next(new Error('Empty products ids'));
+            throw new Error('Empty products ids');
         }
         let totalWeight = Number(req.body.totalWeight) || 0;
         let totalWithoutDelivery = 0;
 
-        productsIds.forEach((productId, index) => {
+        for (let i = 0; i < productsIdsLength; i++) {
+            const productId = productsIds[i];
             const productData = products[productId];
             if (!productData) {
-                res.status(400);
-                return next(new Error(`No products[${productId}] data`));
+                throw new Error(`No products[${productId}] data`);
             }
-            ProductModel.findById(productId, function(err, product) {
-                const {unitPrice, stock, name} = product;
-                if (Number(productData.unitPrice) !== unitPrice * 100) {
-                    res.status(400);
-                    return next(new Error('Wrong product unit price'));
-                }
-                if (parseInt(productData.quantity, 2) > stock) {
-                    res.status(400);
-                    return next(new Error('Wrong product quantity'));
-                }
-                if (productData.name !== name) {
-                    res.status(400);
-                    return next(new Error('Wrong product name'));
-                }
-                totalWeight -= product.weight * 100 * productData.quantity / 100;
-                totalWithoutDelivery += Number(productData.unitPrice) * productData.quantity;
-                if (productsIdsLength === index + 1) {
-                    if (totalWeight !== 0) {
-                        res.status(400);
-                        return next(new Error('Wrong total weight'));
-                    }
-                    if (totalWithoutDelivery !== req.body.totalWithoutDelivery) {
-                        res.status(400);
-                        return next(new Error('Wrong total amount'));
-                    }
-                    next(err);
-                }
-            });
-        });
+            const product = await ProductModel.findById(productId);
+            const {unitPrice, stock, name} = product;
+            if (Number(productData.unitPrice) !== unitPrice * 100) {
+                throw new Error('Wrong product unit price');
+            }
+            if (parseInt(productData.quantity, 2) > stock) {
+                throw new Error('Wrong product quantity');
+            }
+            if (productData.name !== name) {
+                throw new Error('Wrong product name');
+            }
+            totalWeight -= product.weight * 100 * productData.quantity;
+            totalWithoutDelivery += Number(productData.unitPrice) * productData.quantity;
+        }
+
+        if (totalWeight !== 0) {
+            throw new Error('Wrong total weight');
+        }
+        if (totalWithoutDelivery !== req.body.totalWithoutDelivery) {
+            throw new Error('Wrong total amount');
+        }
+        next();
     } catch (err) {
         res.status(400);
         return next(err);
