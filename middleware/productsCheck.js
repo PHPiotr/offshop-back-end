@@ -15,7 +15,7 @@ const productsCheck = ProductModel => async (req, res, next) => {
                 throw new Error(`No products[${productId}] data`);
             }
             const product = await ProductModel.findById(productId);
-            const {unitPrice, stock, name} = product;
+            const {unitPrice, stock, name, weight} = product;
             if (Number(productData.unitPrice) !== unitPrice * 100) {
                 throw new Error('Wrong product unit price');
             }
@@ -25,7 +25,7 @@ const productsCheck = ProductModel => async (req, res, next) => {
             if (productData.name !== name) {
                 throw new Error('Wrong product name');
             }
-            totalWeight -= product.weight * 100 * productData.quantity;
+            totalWeight -= weight * 100 * productData.quantity;
             totalWithoutDelivery += Number(productData.unitPrice) * productData.quantity;
         }
 
