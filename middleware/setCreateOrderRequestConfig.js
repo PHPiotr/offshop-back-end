@@ -19,7 +19,7 @@ module.exports = (req, res, next) => {
             merchantPosId: req.body.merchantPosId,
             description: `${req.body.description} ${extOrderId}`,
             currencyCode: req.body.currencyCode,
-            totalAmount: req.body.totalAmount,
+            totalAmount: `${req.body.totalAmount}`,
             buyer: req.body.buyer,
             settings: req.body.settings,
             products: req.body.productsIds.map(i => req.body.products[i]),

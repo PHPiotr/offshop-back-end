@@ -17,7 +17,7 @@ module.exports = (req, res, next) => {
         res.status(401);
         return next(new Error('Invalid currencyCode parameter'));
     }
-    if (typeof body.totalAmount !== 'string') {
+    if (typeof body.totalAmount !== 'number') {
         res.status(401);
         return next(new Error('Invalid totalAmount parameter'));
     }

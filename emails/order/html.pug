@@ -28,9 +28,9 @@ div(class='card')
     li
       div(class='list-item')
         div(class='item-text')
-          span(class='primary') #{deliveryMethod.name} (#{totalWeight} kg)
+          span(class='primary') #{deliveryMethod.name} (#{(Number(totalWeight) / 100)} kg)
           p(class='secondary')
-            span #{deliveryMethod.unitPrice} zł / kg * #{totalWeight} kg = #{((Number(totalAmount) - totalWithoutDelivery) / 100).toFixed(2)} zł
+            span #{deliveryMethod.unitPrice} zł / kg x #{(Number(totalWeight) / 100)} kg = #{((Number(totalAmount) - totalWithoutDelivery) / 100).toFixed(2)} zł
     hr
     li
       div(class='list-item')
