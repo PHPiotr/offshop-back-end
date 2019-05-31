@@ -3,9 +3,6 @@ const Schema = mongoose.Schema;
 const CategorySchema = require('./CategorySchema');
 const slugify = require('slugify');
 
-const getMoney = require('../utils/getMoney');
-const getWeight = require('../utils/getWeight');
-
 const ProductSchema = new Schema({
     name: {
         type: String,
@@ -47,12 +44,10 @@ const ProductSchema = new Schema({
     },
     unitPrice: {
         type: Number,
-        get: getMoney,
     },
     weight: {
         type: Number,
         required: true,
-        get: getWeight,
     },
 }, {
     timestamps: true,
@@ -62,6 +57,12 @@ ProductSchema.pre('save', async function() {
     this.slug = slugify(this.slug || this.name, {lower: true});
 });
 
-ProductSchema.set('toJSON', {getters: true});
+ProductSchema.set('toJSON', {
+    virtuals: true,
+    versionKey: false,
+    transform: function(doc, ret) {
+        delete ret._id;
+    },
+});
 
 module.exports = ProductSchema;
