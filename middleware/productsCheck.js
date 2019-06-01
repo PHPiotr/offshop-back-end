@@ -15,24 +15,27 @@ const productsCheck = ProductModel => async (req, res, next) => {
                 throw new Error(`No products[${productId}] data`);
             }
             const product = await ProductModel.findById(productId);
-            const {unitPrice, stock, name, weight} = product;
-            if (Number(productData.unitPrice) !== unitPrice * 100) {
+            const {unitPrice, stock, name, weight, active} = product;
+            if (Number(productData.unitPrice) !== unitPrice) {
                 throw new Error('Wrong product unit price');
             }
-            if (parseInt(productData.quantity, 2) > stock) {
+            if (Number(productData.quantity) > stock) {
                 throw new Error('Wrong product quantity');
             }
             if (productData.name !== name) {
                 throw new Error('Wrong product name');
             }
-            totalWeight -= weight * 100 * productData.quantity;
-            totalWithoutDelivery += Number(productData.unitPrice) * productData.quantity;
+            if (!active) {
+                throw new Error(`${name} - inactive product`);
+            }
+            totalWeight -= weight * Number(productData.quantity);
+            totalWithoutDelivery += Number(productData.unitPrice) * Number(productData.quantity);
         }
 
         if (totalWeight !== 0) {
             throw new Error('Wrong total weight');
         }
-        if (totalWithoutDelivery !== req.body.totalWithoutDelivery) {
+        if (totalWithoutDelivery !== Number(req.body.totalWithoutDelivery)) {
             throw new Error('Wrong total amount');
         }
         next();

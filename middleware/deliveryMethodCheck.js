@@ -26,8 +26,8 @@ const deliveryMethodCheck = DeliveryMethodModel => async (req, res, next) => {
                 res.status(400);
                 return next(new Error('Wrong delivery method slug'));
             }
-            const expectedTotal = doc.unitPrice * 100 * req.body.totalWeight / 100;
-            const receivedTotal = req.body.totalAmount - req.body.totalWithoutDelivery;
+            const expectedTotal = doc.unitPrice * Number(req.body.totalWeight) / 100;
+            const receivedTotal = Number(req.body.totalAmount) - Number(req.body.totalWithoutDelivery);
             if (expectedTotal !== receivedTotal) {
                 res.status(400);
                 return next(new Error('Wrong delivery cost'));

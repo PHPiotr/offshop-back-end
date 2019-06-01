@@ -28,16 +28,16 @@ div(class='card')
     li
       div(class='list-item')
         div(class='item-text')
-          span(class='primary') #{deliveryMethod.name} (#{(Number(totalWeight) / 100)} kg)
+          span(class='primary') #{deliveryMethod.name} (#{(totalWeight / 100)} kg)
           p(class='secondary')
-            span #{deliveryMethod.unitPrice} zł / kg x #{(Number(totalWeight) / 100)} kg = #{((Number(totalAmount) - totalWithoutDelivery) / 100).toFixed(2)} zł
+            span #{(deliveryMethod.unitPrice / 100).toFixed(2)} zł / kg x #{(totalWeight / 100).toFixed(2)} kg = #{((totalAmount - totalWithoutDelivery) / 100).toFixed(2)} zł
     hr
     li
       div(class='list-item')
         div(class='item-text')
           span(class='primary') Razem z dostawą
           p(class='secondary')
-            span #{(Number(totalAmount) / 100).toFixed(2)} zł
+            span #{(totalAmount / 100).toFixed(2)} zł
     hr
   else
     li
@@ -52,5 +52,5 @@ div(class='card')
         div(class='item-text')
           span(class='primary') Razem
           p(class='secondary')
-            span #{(Number(totalAmount) / 100).toFixed(2)} zł
+            span #{(totalAmount / 100).toFixed(2)} zł
     hr
