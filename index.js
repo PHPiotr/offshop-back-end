@@ -62,7 +62,7 @@ app.use(fileUpload({
 }));
 app.use(helmet());
 app.use(cors({
-    origin: process.env.ACCESS_CONTROL_ALLOW_ORIGIN,
+    origin: (process.env.ACCESS_CONTROL_ALLOW_ORIGIN).split(','),
     allowedHeaders: ['Content-Type', 'Authorization'],
     credentials: true,
 }));
