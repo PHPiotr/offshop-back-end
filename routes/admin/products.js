@@ -86,34 +86,34 @@ module.exports = (config) => {
 
     router.put('/:productId', async (req, res, next) => {
         try {
-            const currentProduct = await ProductModel.findById(req.params.productId).exec();
+            const {productId} = req.params;
+            const currentProduct = await ProductModel.findById(productId).exec();
             if (!currentProduct) {
                 return res.send(404);
             }
 
             const updatedProduct = await ProductModel.findByIdAndUpdate(
-                req.params.productId,
+                productId,
                 {$set: req.body},
                 {runValidators: true, new: true}
             );
 
             if (Object.keys(req.files || {}).length) {
-                const {id} = updatedProduct;
                 try {
                     await Promise.all([
-                        fileUtils.s3DeleteFiles([`${id}.tile.jpg`, `${id}.avatar.jpg`]),
+                        fileUtils.s3DeleteFiles([`${productId}.tile.jpg`, `${productId}.avatar.jpg`]),
                     ]);
                 } catch (e) {
                     console.error(e);
                 }
-                await processUpload(req.files.img.data, id);
+                await processUpload(req.files.img.data, productId);
             }
 
             if (!updatedProduct) {
                 return res.sendStatus(404);
             }
             io.emit('updateProduct', updatedProduct);
-            res.set('Location', `${process.env.API_URL}/admin/products/${id}`);
+            res.set('Location', `${process.env.API_URL}/admin/products/${productId}`);
             res.json(updatedProduct);
         } catch (e) {
             return next(e);
