@@ -49,7 +49,7 @@ module.exports = (config) => {
 
             const updatedDeliveryMethod = await DeliveryMethodModel.findByIdAndUpdate(
                 req.params.deliveryMethodId,
-                {$set: {name, slug, unitPrice: unitPrice * 100}},
+                {$set: {name, slug, unitPrice: unitPrice}},
                 {runValidators: true, new: true}
             );
 
