@@ -10,8 +10,6 @@ div(class='card')
     each id in productsIds
       li
         div(class='list-item')
-          div(class='avatar')
-            img(src=`http://offshop-1.s3.eu-central-1.amazonaws.com/${id}.avatar.jpg` alt=`${productsById[id].name}` width="40" height="40")
           div(class='item-text')
             span(class='primary') #{productsById[id].name} (#{productsById[id].quantity} szt.)
             p(class='secondary')
