@@ -1,14 +1,20 @@
-const request = require('request');
-const accessTokenCheck = require('../middleware/accessTokenCheck');
-const orderCreateParamsCheck = require('../middleware/orderCreateParamsCheck');
-const verifyNotificationSignature = require('../middleware/verifyNotificationSignature');
-const productsCheckMiddleware = require('../middleware/productsCheck');
-const deliveryMethodCheckMiddleware = require('../middleware/deliveryMethodCheck');
-const setCreateOrderRequestConfig = require('../middleware/setCreateOrderRequestConfig');
-const sendMail = require('../utils/sendMail');
-const axios = require('axios');
+module.exports = (config) => {
 
-module.exports = (io, router, OrderModel, ProductModel, DeliveryMethodModel) => {
+    const {
+        io,
+        router,
+        OrderModel,
+        ProductModel,
+        DeliveryMethodModel,
+        accessTokenCheck,
+        orderCreateParamsCheck,
+        verifyNotificationSignature,
+        productsCheckMiddleware,
+        deliveryMethodCheckMiddleware,
+        setCreateOrderRequestConfig,
+        sendMail,
+        axios
+    } = config;
 
     const productsCheck = productsCheckMiddleware(ProductModel);
     const deliveryMethodCheck = deliveryMethodCheckMiddleware(DeliveryMethodModel);
@@ -134,101 +140,6 @@ module.exports = (io, router, OrderModel, ProductModel, DeliveryMethodModel) => 
                 next(err);
             }
         });
-
-    // OrderRetrieveRequest
-    router.get('/:extOrderId', accessTokenCheck, (req, res, next) => {
-
-        const {extOrderId} = req.params;
-        if (typeof extOrderId !== 'string' || !extOrderId.trim()) {
-            res.status(401);
-            return next(Error('Invalid order id'));
-        }
-
-        let orderDoc;
-        let alreadyRetriedTimes = 0;
-        let requestOptions;
-
-        const callback = (err, response, body) => {
-            if (err) {
-                return next(err);
-            }
-
-            if (response.statusCode !== 200) {
-                res.status(response.statusCode);
-                return next(Error(response.statusMessage));
-            }
-
-            const json = JSON.parse(body);
-            const status = json.orders[0].status;
-            if (status === PENDING && MAX_RETRIEVE_ORDER_RETRIES > alreadyRetriedTimes) {
-                alreadyRetriedTimes++;
-                return setTimeout(function () {
-                    request.get(requestOptions, callback);
-                }, 300);
-            }
-            console.log('retried times: ', alreadyRetriedTimes);
-            if (orderDoc.status === status) {
-                return res.json(orderDoc);
-            }
-
-            const properties = (json.properties || []).reduce((acc, {name, value}) => {
-                acc[name] = value;
-                return acc;
-            }, {});
-
-            orderDoc.set({status, properties});
-            orderDoc.save(function (err, updatedOrder) {
-                if (err) {
-                    return next(err);
-                }
-                res.json(updatedOrder);
-            });
-        };
-
-        OrderModel.findOne({extOrderId: extOrderId}, function (err, order) {
-            if (err) {
-                return next(err);
-            }
-            orderDoc = order;
-
-            requestOptions = {
-                url: `${process.env.PAYU_API}/orders/${orderDoc.orderId}`,
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `${req.headers.authorization}`,
-                },
-            };
-
-            request.get(requestOptions, callback);
-        });
-    });
-
-    // TransactionRetrieveRequest
-    router.get('/:orderId/transactions', accessTokenCheck, (req, res, next) => {
-
-        const {orderId} = req.params;
-        if (typeof orderId !== 'string' || !orderId.trim()) {
-            res.status(401);
-            return next(Error('Invalid order id'));
-        }
-
-        const options = {
-            url: `${process.env.PAYU_API}/orders/${orderId}/transactions`,
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `${req.headers.accessToken}`,
-            },
-        };
-
-        const callback = (err, response, body) => {
-            if (err) {
-                return next(err);
-            }
-            res.json(JSON.parse(body));
-        };
-
-        request.get(options, callback);
-    });
 
     return router;
 };

@@ -12,6 +12,7 @@ const cors = require('cors');
 const helmet = require('helmet');
 const fileUpload = require('express-fileupload');
 const aws = require('aws-sdk');
+const axios = require('axios');
 
 // routes
 const authorize = require('./routes/authorize');
@@ -30,6 +31,12 @@ const productsManagement = require('./routes/admin/products');
 // middleware
 const jwtCheck = require('./middleware/jwtCheck');
 const queryOptionsCheck = require('./middleware/queryOptionsCheck');
+const accessTokenCheck = require('./middleware/accessTokenCheck');
+const orderCreateParamsCheck = require('./middleware/orderCreateParamsCheck');
+const verifyNotificationSignature = require('./middleware/verifyNotificationSignature');
+const productsCheckMiddleware = require('./middleware/productsCheck');
+const deliveryMethodCheckMiddleware = require('./middleware/deliveryMethodCheck');
+const setCreateOrderRequestConfig = require('./middleware/setCreateOrderRequestConfig');
 
 // utils
 const resizeFile = require('./utils/resizeFile');
@@ -38,6 +45,7 @@ const renameFile = require('./utils/renameFile');
 const readFile = require('./utils/readFile');
 const s3UploadFile = require('./utils/s3UploadFile');
 const s3DeleteFiles = require('./utils/s3DeleteFiles');
+const sendMail = require('./utils/sendMail');
 
 // models
 const OrderModel = require('./models/OrderModel');
@@ -70,7 +78,21 @@ app.use(cors({
 app.locals.db = db;
 app.all('/admin/*', jwtCheck());
 app.use('/authorize', authorize);
-app.use('/orders', orders(io, express.Router(), OrderModel, ProductModel, DeliveryMethodModel));
+app.use('/orders', orders({
+    io,
+    axios,
+    router: express.Router(),
+    OrderModel,
+    ProductModel,
+    DeliveryMethodModel,
+    accessTokenCheck,
+    orderCreateParamsCheck,
+    verifyNotificationSignature,
+    productsCheckMiddleware,
+    deliveryMethodCheckMiddleware,
+    setCreateOrderRequestConfig,
+    sendMail
+}));
 app.use('/categories', categories);
 app.use('/products', products({
     ProductModel,
