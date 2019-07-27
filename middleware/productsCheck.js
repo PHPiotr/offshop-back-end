@@ -1,6 +1,6 @@
 const productsCheck = ProductModel => async (req, res, next) => {
     try {
-        const {body: {products = {}, productsIds = []}} = req;
+        const {body: {productsById = {}, productsIds = []}} = req;
         const productsIdsLength = productsIds.length;
         if (!productsIdsLength) {
             throw new Error('Empty products ids');
@@ -10,7 +10,7 @@ const productsCheck = ProductModel => async (req, res, next) => {
 
         for (let i = 0; i < productsIdsLength; i++) {
             const productId = productsIds[i];
-            const productData = products[productId];
+            const productData = productsById[productId];
             if (!productData) {
                 throw new Error(`No products[${productId}] data`);
             }

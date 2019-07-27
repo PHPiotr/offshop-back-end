@@ -3,40 +3,46 @@ const Schema = mongoose.Schema
 const ObjectId = Schema.Types.ObjectId;
 
 const OrderSchema = new Schema({
-    orderId: {
-        type: String,
-        required: true,
-        unique: true,
-    },
+    currencyCode: String,
+    customerIp: String,
+    description: String,
     extOrderId: {
         type: ObjectId,
         required: true,
         unique: true,
     },
-    orderCreateDate: Date,
-    notifyUrl: String,
-    customerIp: String,
     merchantPosId: String,
-    description: String,
-    currencyCode: String,
+    notifyUrl: String,
+    orderId: {
+        type: String,
+        required: true,
+        unique: true,
+    },
+    products: [Object],
+    status: {
+        type: String,
+        enum: ['LOCAL_NEW', 'LOCAL_NEW_REJECTED', 'LOCAL_NEW_COMPLETED', 'NEW', 'PENDING', 'WAITING_FOR_CONFIRMATION', 'COMPLETED', 'CANCELED', 'REJECTED'],
+        index: true,
+    },
+    redirectUri: {
+        type: String,
+        default: '',
+    },
     totalAmount: String,
     totalWithoutDelivery: Number,
     totalWeight: Number,
     buyer: Object,
     deliveryMethod: Object,
     payMethod: Object,
-    status: {
-        type: String,
-        enum: ['PENDING', 'WAITING_FOR_CONFIRMATION', 'COMPLETED', 'CANCELED', 'REJECTED'],
-        index: true,
-    },
-    products: [Object],
+    shippingMethod: Object,
     productsIds: [ObjectId],
     productsById: Object,
     localReceiptDateTime: Date,
     properties: [Object],
 }, {
-    timestamps: true,
+    timestamps: {
+        createdAt: 'orderCreateDate'
+    },
 });
 
 

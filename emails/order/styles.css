@@ -118,7 +118,6 @@ ul li div.list-item div.avatar img {
 
 ul li div.list-item div.item-text {
     flex: 1 1 auto;
-    padding: 0 16px;
     min-width: 0;
     display: block;
     text-align: left;
