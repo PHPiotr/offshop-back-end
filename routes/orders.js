@@ -27,6 +27,9 @@ module.exports = (config) => {
             const conditions = {orderId: {$eq: order.orderId}, status: {$nin: ['COMPLETED', 'CANCELED']}};
 
             const foundOrder = await OrderModel.findOne(conditions).exec();
+            if (!foundOrder) {
+                return res.sendStatus(200);
+            }
 
             const update = {$set: Object.assign(foundOrder, order, {localReceiptDateTime}, {properties})};
             const options = {'new': true, runValidators: true};
