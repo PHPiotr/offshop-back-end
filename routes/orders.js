@@ -90,11 +90,11 @@ module.exports = (io, router, OrderModel, ProductModel, DeliveryMethodModel) => 
             try {
                 const extOrderId = res.createOrderRequestConfig.data.extOrderId;
 
-                // LOCAL_NEW
+                // LOCAL_NEW_INITIATED
                 const localNewOrder = await OrderModel.findOneAndUpdate(
                     {extOrderId},
                     {$set: Object.assign(req.body, res.createOrderRequestConfig.data, {
-                        status: 'LOCAL_NEW',
+                        status: 'LOCAL_NEW_INITIATED',
                         orderId: res.createOrderRequestConfig.data.extOrderId,
                     })},
                     {upsert: true, new: true, runValidators: true, setDefaultsOnInsert: true}
