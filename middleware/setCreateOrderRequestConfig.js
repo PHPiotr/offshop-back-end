@@ -22,7 +22,7 @@ module.exports = (req, res, next) => {
             totalAmount: `${req.body.totalAmount}`,
             buyer: req.body.buyer,
             settings: req.body.settings,
-            products: req.body.productsIds.map(i => req.body.products[i]),
+            products: req.body.productsIds.map(i => req.body.productsById[i]),
         },
         maxRedirects: 0,
         validateStatus: status => status === 201 || status === 302,

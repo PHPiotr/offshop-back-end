@@ -24,6 +24,7 @@ const errorHandler = require('./routes/errorHandler');
 
 // admin routes
 const deliveryMethodsManagement = require('./routes/admin/deliveryMethods');
+const ordersManagement = require('./routes/admin/orders');
 const productsManagement = require('./routes/admin/products');
 
 // middleware
@@ -85,6 +86,12 @@ app.use('/delivery-methods', deliveryMethods({
 app.use('/pay-methods', payMethods({router: express.Router()}));
 
 // admin handlers
+app.use('/admin/orders', ordersManagement({
+    io,
+    OrderModel,
+    router: express.Router(),
+    queryOptionsCheck,
+}));
 app.use('/admin/products', productsManagement({
     io,
     ProductModel,

@@ -41,10 +41,10 @@ module.exports = (req, res, next) => {
         res.status(401);
         return next(new Error('Invalid settings parameter'));
     }
-    const products = body.products;
-    if (typeof products !== 'object') {
+    const productsById = body.productsById;
+    if (typeof productsById !== 'object') {
         res.status(401);
-        return next(new Error('Invalid products parameter'));
+        return next(new Error('Invalid productsById parameter'));
     }
     const payMethods = body.payMethods;
     if (typeof payMethods !== 'object') {
