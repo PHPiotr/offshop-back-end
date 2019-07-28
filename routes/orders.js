@@ -24,25 +24,17 @@ module.exports = (config) => {
         const {body: {order, localReceiptDateTime, properties}} = req;
 
         try {
-            const conditions = {orderId: {$eq: order.orderId}, status: {$nin: ['COMPLETED', 'CANCELED']}};
-
-            const foundOrder = await OrderModel.findOne(conditions).exec();
-            if (!foundOrder) {
-                return res.sendStatus(200);
-            }
-
-            const update = {$set: Object.assign(foundOrder, order, {localReceiptDateTime}, {properties})};
-            const options = {'new': true, runValidators: true};
-
-            const updatedOrder = await OrderModel.findOneAndUpdate(conditions, update, options).exec();
+            const updatedOrder = await OrderModel.findOneAndUpdate(
+                {orderId: {$eq: order.orderId}, status: {$neq: order.status}},
+                {$set: Object.assign(order, {localReceiptDateTime, properties})},
+                {new: true, runValidators: true}
+            ).exec();
 
             if (!updatedOrder) {
                 return res.sendStatus(200);
             }
 
-            io.emit('order', updatedOrder);
-
-            const {status, merchantPosId, productsIds, products} = updatedOrder;
+            const {status, productsIds, products} = updatedOrder;
 
             if (status === 'COMPLETED') {
                 const productsList = await ProductModel.find({_id: {$in: productsIds}});
@@ -54,35 +46,14 @@ module.exports = (config) => {
                     await doc.save();
                 });
                 io.emit('quantities', {productsIds, productsById});
-                try {
-                    await sendMail('order', Object.assign(updatedOrder, {productPath: process.env.PRODUCT_PATH}));
-                } catch (e) {
-                    console.error(e);
-                }
             }
 
-            if (status !== 'REJECTED') {
+            try {
+                await sendMail('order', Object.assign(updatedOrder, {productPath: process.env.PRODUCT_PATH}));
+            } finally {
                 return res.sendStatus(200);
             }
 
-            // Cancel an order and proceed with a refund in case of REJECTED
-            const {data: {access_token}} = await axios({
-                url: `${process.env.PAYU_HOST}/pl/standard/user/oauth/authorize`,
-                method: 'post',
-                data: `grant_type=client_credentials&client_id=${merchantPosId}&client_secret=${process.env.PAYU_CLIENT_SECRET}`,
-                headers: {'Content-Type': 'application/x-www-form-urlencoded'}
-            });
-            const cancelOrderResponse = await axios({
-                url: `${process.env.PAYU_API}/orders/${order.orderId}`,
-                method: 'delete',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${access_token}`,
-                },
-                maxRedirects: 0,
-                validateStatus: status => status === 200,
-            });
-            return res.sendStatus(cancelOrderResponse.status);
         } catch (err) {
             next(err);
         }
