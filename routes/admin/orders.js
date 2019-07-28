@@ -1,7 +1,8 @@
 module.exports = (config) => {
 
-    const {io, router, OrderModel, queryOptionsCheck} = config;
+    const {axios, io, router, OrderModel, queryOptionsCheck} = config;
 
+    // listOrders
     router.get('/', queryOptionsCheck(OrderModel), async (req, res, next) => {
         try {
             const projection = null;
@@ -13,6 +14,7 @@ module.exports = (config) => {
         }
     });
 
+    // viewOrder
     router.get('/:extOrderId', async (req, res, next) => {
         try {
             const doc = await OrderModel.findOne({extOrderId: req.params.extOrderId}).exec();
@@ -20,6 +22,40 @@ module.exports = (config) => {
                 return res.send(404);
             }
             res.json(doc);
+        } catch (e) {
+            next(e);
+        }
+    });
+
+    // cancelOrder
+    router.delete('/:extOrderId', async (req, res, next) => {
+        try {
+            const doc = await OrderModel.findOne({extOrderId: req.params.extOrderId}).exec();
+            if (!doc) {
+                return res.send(404);
+            }
+
+            const cancelOrderResponse = await axios({
+                url: `${process.env.PAYU_API}/orders/${doc.orderId}`,
+                method: 'delete',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${req.body.payuToken}`,
+                },
+                maxRedirects: 0,
+                validateStatus: status => status === 200,
+            });
+            if (cancelOrderResponse.data.error) {
+                return next(new Error(cancelOrderResponse.data.error));
+            }
+
+            const canceledOrder = await OrderModel.findOneAndUpdate(
+                {extOrderId: cancelOrderResponse.data.extOrderId},
+                {$set: {status: 'CANCELED'}},
+                {new: true, runValidators: true}
+            ).exec();
+
+            return res.json(canceledOrder);
         } catch (e) {
             next(e);
         }

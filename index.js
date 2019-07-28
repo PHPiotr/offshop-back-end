@@ -110,6 +110,7 @@ app.use('/pay-methods', payMethods({router: express.Router()}));
 // admin handlers
 app.use('/admin/orders', ordersManagement({
     io,
+    axios,
     OrderModel,
     router: express.Router(),
     queryOptionsCheck,
