@@ -28,7 +28,7 @@ module.exports = (config) => {
     });
 
     // cancelOrder
-    router.delete('/:extOrderId', async (req, res, next) => {
+    router.put('/:extOrderId', async (req, res, next) => {
         try {
             const doc = await OrderModel.findOne({extOrderId: req.params.extOrderId}).exec();
             if (!doc) {
@@ -56,6 +56,36 @@ module.exports = (config) => {
             ).exec();
 
             return res.json(canceledOrder);
+        } catch (e) {
+            next(e);
+        }
+    });
+
+    // deleteOrder
+    router.delete('/:extOrderId', async (req, res, next) => {
+        try {
+            const doc = await OrderModel.findOne({extOrderId: req.params.extOrderId}).exec();
+            if (!doc) {
+                return res.send(404);
+            }
+
+            try {
+                await axios({
+                    url: `${process.env.PAYU_API}/orders/${doc.orderId}`,
+                    method: 'get',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${req.body.payuToken}`,
+                    },
+                    maxRedirects: 0,
+                    validateStatus: status => status === 404,
+                });
+            } catch {
+                return res.send(400);
+            }
+
+            await OrderModel.deleteOne({extOrderId: req.params.extOrderId});
+            res.sendStatus(204);
         } catch (e) {
             next(e);
         }
