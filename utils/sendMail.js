@@ -11,12 +11,10 @@ const transport = nodemailer.createTransport({
     }
 });
 
-const sendMail = async (template, data) => {
+const sendMail = async (template, locals, from, to) => {
     try {
         const email = new Email({
-            message: {
-                from: process.env.EMAIL_ACCOUNT_FROM,
-            },
+            message: {from},
             send: true,
             transport,
             juice: true,
@@ -30,10 +28,8 @@ const sendMail = async (template, data) => {
         });
         await email.send({
             template: path.join(__dirname, '../', 'emails', template),
-            message: {
-                to: `${data.buyer.firstName} ${data.buyer.lastName} <${data.buyer.email}>`
-            },
-            locals: data,
+            message: {to},
+            locals,
         });
     } catch (e) {
         console.error(e);

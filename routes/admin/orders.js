@@ -6,7 +6,7 @@ module.exports = (config) => {
     router.get('/', queryOptionsCheck(OrderModel), async (req, res, next) => {
         try {
             const projection = null;
-            const query = OrderModel.find({}, projection, req.query.validQueryOptions);
+            const query = OrderModel.find({status: {$nin: ['LOCAL_SOFT_DELETED']}}, projection, req.query.validQueryOptions);
             const docs = await query.exec();
             res.json(docs);
         } catch (err) {
@@ -69,23 +69,50 @@ module.exports = (config) => {
                 return res.send(404);
             }
 
-            try {
-                await axios({
-                    url: `${process.env.PAYU_API}/orders/${doc.orderId}`,
-                    method: 'get',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${req.body.payuToken}`,
-                    },
-                    maxRedirects: 0,
-                    validateStatus: status => status === 404,
-                });
-            } catch {
-                return res.send(400);
+            await OrderModel.findOneAndUpdate(
+                {extOrderId: req.params.extOrderId},
+                {$set: {status: 'LOCAL_SOFT_DELETED'}},
+                {runValidators: true}
+            ).exec();
+
+            res.sendStatus(204);
+        } catch (e) {
+            next(e);
+        }
+    });
+
+    // refundOrder
+    router.post('/:extOrderId/refunds', async (req, res, next) => {
+        try {
+            const doc = await OrderModel.findOne({extOrderId: req.params.extOrderId}).exec();
+            if (!doc) {
+                return res.send(404);
             }
 
-            await OrderModel.deleteOne({extOrderId: req.params.extOrderId});
-            res.sendStatus(204);
+            const refundOrderResponse = await axios({
+                url: `${process.env.PAYU_API}/orders/${doc.orderId}/refunds`,
+                method: 'post',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${req.body.payuToken}`,
+                },
+                data: {
+                    refund: req.body.refund,
+                },
+                maxRedirects: 0,
+                validateStatus: status => status === 200,
+            });
+
+            try {
+                await OrderModel.findOneAndUpdate(
+                    {extOrderId: req.params.extOrderId},
+                    {$set: {refund: refundOrderResponse.data}},
+                    {runValidators: true}
+                ).exec();
+            } finally {
+                res.status(refundOrderResponse.status).json(refundOrderResponse.data);
+            }
+
         } catch (e) {
             next(e);
         }

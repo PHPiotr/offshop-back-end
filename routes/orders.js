@@ -21,11 +21,24 @@ module.exports = (config) => {
 
     router.post('/notify', verifyNotificationSignature, async (req, res, next) => {
 
-        const {body: {order, localReceiptDateTime, properties}} = req;
+        const {body: {order, orderId, localReceiptDateTime, properties, refund}} = req;
+
+        if (refund) {
+            try {
+                const refundedOrder = await OrderModel.findOneAndUpdate(
+                    {orderId: {$eq: orderId}},
+                    {$set: {refund}},
+                    {new: true, runValidators: true}
+                ).exec();
+                io.emit('refund', {[refundedOrder.extOrderId]: refundedOrder});
+            } finally {
+                return res.sendStatus(200);
+            }
+        }
 
         try {
             const updatedOrder = await OrderModel.findOneAndUpdate(
-                {orderId: {$eq: order.orderId}, status: {$neq: order.status}},
+                {orderId: {$eq: order.orderId}},
                 {$set: Object.assign(order, {localReceiptDateTime, properties})},
                 {new: true, runValidators: true}
             ).exec();
@@ -48,8 +61,17 @@ module.exports = (config) => {
                 io.emit('quantities', {productsIds, productsById});
             }
 
+            const {email, firstName, lastName} = updatedOrder.buyer || {};
+            if (!email || !firstName || !lastName) {
+                return res.sendStatus(200);
+            }
+
             try {
-                await sendMail('order', Object.assign(updatedOrder, {productPath: process.env.PRODUCT_PATH}));
+                await sendMail(
+                    'order',
+                    Object.assign(updatedOrder, {productPath: process.env.PRODUCT_PATH}),
+                    process.env.EMAIL_ACCOUNT_FROM,
+                    `${firstName} ${lastName} <${email}>`);
             } finally {
                 return res.sendStatus(200);
             }

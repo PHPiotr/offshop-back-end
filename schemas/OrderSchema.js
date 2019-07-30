@@ -21,7 +21,7 @@ const OrderSchema = new Schema({
     products: [Object],
     status: {
         type: String,
-        enum: ['LOCAL_NEW_INITIATED', 'LOCAL_NEW_REJECTED', 'LOCAL_NEW_COMPLETED', 'NEW', 'PENDING', 'WAITING_FOR_CONFIRMATION', 'COMPLETED', 'CANCELED', 'REJECTED'],
+        enum: ['LOCAL_SOFT_DELETED', 'LOCAL_NEW_INITIATED', 'LOCAL_NEW_REJECTED', 'LOCAL_NEW_COMPLETED', 'NEW', 'PENDING', 'WAITING_FOR_CONFIRMATION', 'COMPLETED', 'CANCELED', 'REJECTED'],
         index: true,
     },
     redirectUri: {
@@ -37,6 +37,7 @@ const OrderSchema = new Schema({
     shippingMethod: Object,
     productsIds: [ObjectId],
     productsById: Object,
+    refund: Object,
     localReceiptDateTime: Date,
     properties: [Object],
 }, {
