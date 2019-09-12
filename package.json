@@ -36,7 +36,7 @@
     "start": "node index",
     "dev": "nodemon index",
     "dev:serve": "node scripts/serve.js",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"No test specified\" && exit 0"
   },
   "keywords": [],
   "author": "Piotr Kowalski <piet.kowalski@gmail.com>",
