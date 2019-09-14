@@ -91,30 +91,17 @@ module.exports = (config) => {
             if (!currentProduct) {
                 return res.send(404);
             }
+            Object.assign(currentProduct, req.body);
+            await currentProduct.save();
 
-            const updatedProduct = await ProductModel.findByIdAndUpdate(
-                productId,
-                {$set: req.body},
-                {runValidators: true, new: true}
-            );
-
+            let uploadedImagesData = null;
             if (Object.keys(req.files || {}).length) {
-                try {
-                    await Promise.all([
-                        fileUtils.s3DeleteFiles([`${productId}.tile.jpg`, `${productId}.avatar.jpg`]),
-                    ]);
-                } catch (e) {
-                    console.error(e);
-                }
-                await processUpload(req.files.img.data, productId);
+                uploadedImagesData = await processUpload(req.files.img.data, productId);
             }
 
-            if (!updatedProduct) {
-                return res.sendStatus(404);
-            }
-            io.emit('updateProduct', updatedProduct);
+            io.emit('updateProduct', currentProduct);
             res.set('Location', `${process.env.API_URL}/admin/products/${productId}`);
-            res.json(updatedProduct);
+            res.json(currentProduct);
         } catch (e) {
             return next(e);
         }
