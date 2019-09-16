@@ -1,6 +1,6 @@
 const DEFAULT_SORT = 'updatedAt';
 const DEFAULT_ORDER = -1;
-const DEFAULT_LIMIT = 25;
+const DEFAULT_LIMIT = null;
 const DEFAULT_SKIP = 0;
 
 const ascendingValues = ['asc', 'ASC', '1', 1, true, 'true'];
