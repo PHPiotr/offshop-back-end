@@ -4,27 +4,32 @@ module.exports = (config) => {
 
     const processUpload = async (buffer, id) => {
         try {
-            let data = [];
+            let data = null;
+            const avatarPath = `./public/images/products/${id}.avatar.jpg`;
             const cardPath = `./public/images/products/${id}.card.jpg`;
             const tilePath = `./public/images/products/${id}.tile.jpg`;
-            const avatarPath = `./public/images/products/${id}.avatar.jpg`;
             await Promise.all([
+                fileUtils.resizeFile(buffer, {width: 40, height: 40}, avatarPath),
                 fileUtils.resizeFile(buffer, {width: 800, height: 600}, cardPath),
                 fileUtils.resizeFile(buffer, {width: 320, height: 240}, tilePath),
-                fileUtils.resizeFile(buffer, {width: 40, height: 40}, avatarPath),
             ]);
             try {
-                const [cardBuffer, tileBuffer, avatarBuffer] = await Promise.all([
+                const [avatarBuffer, cardBuffer, tileBuffer] = await Promise.all([
+                    fileUtils.readFile(avatarPath),
                     fileUtils.readFile(cardPath),
                     fileUtils.readFile(tilePath),
-                    fileUtils.readFile(avatarPath),
                 ]);
 
-                data = await Promise.all([
+                const [avatar, card, tile] = await Promise.all([
+                    fileUtils.s3UploadFile(avatarBuffer, `${id}.avatar.jpg`),
                     fileUtils.s3UploadFile(cardBuffer, `${id}.card.jpg`),
                     fileUtils.s3UploadFile(tileBuffer, `${id}.tile.jpg`),
-                    fileUtils.s3UploadFile(avatarBuffer, `${id}.avatar.jpg`),
                 ]);
+                data = {
+                    avatar: `${avatar.Key}?${avatar.ETag.substring(1, avatar.ETag.length - 1)}`,
+                    card: `${card.Key}?${card.ETag.substring(1, card.ETag.length - 1)}`,
+                    tile: `${tile.Key}?${tile.ETag.substring(1, tile.ETag.length - 1)}`,
+                };
             } catch (e) {
                 console.error(e);
             }
@@ -71,14 +76,16 @@ module.exports = (config) => {
                 throw new Error('No files were uploaded.');
             }
 
-            const product = await new ProductModel(req.body).save();
-            const {id} = product;
+            const currentProduct = await new ProductModel(req.body).save();
+            const {id} = currentProduct;
 
-            await processUpload(req.files.img.data, id);
+            const uploadedImagesData = await processUpload(req.files.img.data, id);
+            Object.assign(currentProduct, {images: [uploadedImagesData]});
+            await currentProduct.save();
 
-            io.emit('createProduct', product);
-            res.set('Location', `${process.env.API_URL}/admin/products/${id}`);
-            res.status(201).json(product);
+            io.emit('createProduct', currentProduct);
+            res.set('Location', `${currentProduct.env.API_URL}/admin/products/${id}`);
+            res.status(201).json(currentProduct);
         } catch (e) {
             return next(e);
         }
@@ -91,13 +98,14 @@ module.exports = (config) => {
             if (!currentProduct) {
                 return res.send(404);
             }
-            Object.assign(currentProduct, req.body);
-            await currentProduct.save();
 
             let uploadedImagesData = null;
             if (Object.keys(req.files || {}).length) {
                 uploadedImagesData = await processUpload(req.files.img.data, productId);
             }
+
+            Object.assign(currentProduct, req.body, uploadedImagesData ? {images: [uploadedImagesData]} : {});
+            await currentProduct.save();
 
             io.emit('updateProduct', currentProduct);
             res.set('Location', `${process.env.API_URL}/admin/products/${productId}`);

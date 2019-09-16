@@ -49,6 +49,9 @@ const ProductSchema = new Schema({
         type: Number,
         required: true,
     },
+    images: {
+        type: [Object],
+    },
 }, {
     timestamps: true,
 });
