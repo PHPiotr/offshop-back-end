@@ -26,7 +26,7 @@ module.exports = (model) => {
           orderBy = sort;
       }
       if (ascendingValues.indexOf(order) !== -1) {
-          direction = 1;
+          direction = order;
       }
       options.sort = {
           [orderBy]: direction,
