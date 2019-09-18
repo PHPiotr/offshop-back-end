@@ -1,5 +1,6 @@
 const mongoose = require('mongoose');
-const Schema = mongoose.Schema
+const {possibleOrderStatuses} = require('../utils/getPossibleOrderStatuses');
+const Schema = mongoose.Schema;
 const ObjectId = Schema.Types.ObjectId;
 
 const OrderSchema = new Schema({
@@ -21,7 +22,7 @@ const OrderSchema = new Schema({
     products: [Object],
     status: {
         type: String,
-        enum: ['LOCAL_SOFT_DELETED', 'LOCAL_NEW_INITIATED', 'LOCAL_NEW_REJECTED', 'LOCAL_NEW_COMPLETED', 'NEW', 'PENDING', 'WAITING_FOR_CONFIRMATION', 'COMPLETED', 'CANCELED', 'REJECTED'],
+        enum: possibleOrderStatuses,
         index: true,
     },
     redirectUri: {

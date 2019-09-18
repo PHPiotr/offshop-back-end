@@ -13,7 +13,8 @@ module.exports = (config) => {
         deliveryMethodCheckMiddleware,
         setCreateOrderRequestConfig,
         sendMail,
-        axios
+        axios,
+        possibleOrderStatusesLabels,
     } = config;
 
     const productsCheck = productsCheckMiddleware(ProductModel);
@@ -69,7 +70,7 @@ module.exports = (config) => {
                 try {
                     await sendMail(
                         'order',
-                        Object.assign(foundOrder, {productPath: process.env.PRODUCT_PATH}),
+                        Object.assign(foundOrder, {productPath: process.env.PRODUCT_PATH, possibleOrderStatusesLabels}),
                         process.env.EMAIL_ACCOUNT_FROM,
                         `${firstName} ${lastName} <${email}>`);
                 } finally {
