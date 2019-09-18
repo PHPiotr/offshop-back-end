@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+uniqueValidator = require('mongoose-unique-validator');
 const Schema = mongoose.Schema;
 const CategorySchema = require('./CategorySchema');
 const slugify = require('slugify');
@@ -67,5 +68,7 @@ ProductSchema.set('toJSON', {
         delete ret._id;
     },
 });
+
+ProductSchema.plugin(uniqueValidator, { message: '{PATH} to be unique.' });
 
 module.exports = ProductSchema;
