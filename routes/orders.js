@@ -37,43 +37,44 @@ module.exports = (config) => {
         }
 
         try {
-            const updatedOrder = await OrderModel.findOneAndUpdate(
-                {orderId: {$eq: order.orderId}},
-                {$set: Object.assign(order, {localReceiptDateTime, properties})},
-                {new: true, runValidators: true}
-            ).exec();
+            const foundOrder = await OrderModel.findOne({orderId: {$eq: order.orderId}}).exec();
+            const hasStatusBeenUpdated = foundOrder.status !== order.status;
+            Object.assign(foundOrder, order, {localReceiptDateTime, properties});
+            foundOrder.save();
 
-            if (!updatedOrder) {
+            if (!foundOrder) {
                 return res.sendStatus(200);
             }
 
-            const {status, productsIds, products} = updatedOrder;
+            const {status, productsIds, products} = foundOrder;
 
             if (status === 'COMPLETED') {
                 const productsList = await ProductModel.find({_id: {$in: productsIds}});
                 const productsById = {};
-                productsList.forEach(async function (doc, index) {
+                productsList.forEach(async (doc, index) => {
                     const newQuantity = doc.stock - products[index].quantity;
                     doc.stock = newQuantity < 0 ? 0 : newQuantity;
                     productsById[doc.id] = doc;
-                    await doc.save();
+                    return await doc.save();
                 });
                 io.emit('quantities', {productsIds, productsById});
             }
 
-            const {email, firstName, lastName} = updatedOrder.buyer || {};
+            const {email, firstName, lastName} = foundOrder.buyer || {};
             if (!email || !firstName || !lastName) {
                 return res.sendStatus(200);
             }
 
-            try {
-                await sendMail(
-                    'order',
-                    Object.assign(updatedOrder, {productPath: process.env.PRODUCT_PATH}),
-                    process.env.EMAIL_ACCOUNT_FROM,
-                    `${firstName} ${lastName} <${email}>`);
-            } finally {
-                return res.sendStatus(200);
+            if (hasStatusBeenUpdated) {
+                try {
+                    await sendMail(
+                        'order',
+                        Object.assign(foundOrder, {productPath: process.env.PRODUCT_PATH}),
+                        process.env.EMAIL_ACCOUNT_FROM,
+                        `${firstName} ${lastName} <${email}>`);
+                } finally {
+                    return res.sendStatus(200);
+                }
             }
 
         } catch (err) {
