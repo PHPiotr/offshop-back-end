@@ -21,14 +21,14 @@ const ProductSchema = new Schema({
         required: true,
         trim: true,
         unique: true,
-        minlength: 100,
+        minlength: 15,
         maxlength: 160,
     },
     longDescription: {
         type: String,
         trim: true,
         unique: true,
-        minlength: 250,
+        minlength: 15,
         maxlength: 1000,
     },
     categoryId: {
