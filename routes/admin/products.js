@@ -84,7 +84,7 @@ module.exports = (config) => {
             await currentProduct.save();
 
             io.emit('createProduct', currentProduct);
-            res.set('Location', `${currentProduct.env.API_URL}/admin/products/${id}`);
+            res.set('Location', `${process.env.API_URL}/admin/products/${id}`);
             res.status(201).json(currentProduct);
         } catch (e) {
             return next(e);
