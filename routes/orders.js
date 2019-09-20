@@ -39,7 +39,7 @@ module.exports = (config) => {
 
         try {
             const foundOrder = await OrderModel.findOne({orderId: {$eq: order.orderId}}).exec();
-            const hasStatusBeenUpdated = foundOrder.status !== order.status;
+            const hasStatusBeenUpdated = foundOrder.status !== possibleOrderStatusesLabels[order.status];
             Object.assign(foundOrder, order, {localReceiptDateTime, properties});
             foundOrder.save();
 
@@ -70,7 +70,7 @@ module.exports = (config) => {
                 try {
                     await sendMail(
                         'order',
-                        Object.assign(foundOrder, {productPath: process.env.PRODUCT_PATH, possibleOrderStatusesLabels}),
+                        Object.assign(foundOrder, {productPath: process.env.PRODUCT_PATH}),
                         process.env.EMAIL_ACCOUNT_FROM,
                         `${firstName} ${lastName} <${email}>`);
                 } finally {
