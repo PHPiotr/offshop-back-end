@@ -19,6 +19,10 @@ module.exports = (err, req, res, next) => {
         res.statusCode = 422;
     }
 
+    if (err.name = 'CastError') {
+        return res.send(404);
+    }
+
     const responseStatusCode = parseInt(('' + res.statusCode).charAt(0), 10) > 3 ? res.statusCode : null;
     const statusCode = err.statusCode || responseStatusCode || 500;
     res.statusCode = statusCode;
