@@ -6,3 +6,5 @@ node_modules/
 jspm_packages
 # Serverless directories
 .serverless
+.log_combined.log
+.log_error.log
