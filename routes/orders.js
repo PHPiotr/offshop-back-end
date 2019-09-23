@@ -39,17 +39,16 @@ module.exports = (config) => {
 
         try {
             const foundOrder = await OrderModel.findOne({orderId: {$eq: order.orderId}}).exec();
-            const hasStatusBeenUpdated = foundOrder.status !== possibleOrderStatusesLabels[order.status];
-            Object.assign(foundOrder, order, {localReceiptDateTime, properties});
-            foundOrder.save();
-
             if (!foundOrder) {
                 return res.sendStatus(200);
             }
-
             const {status, productsIds, products} = foundOrder;
+            const hasStatusBeenUpdated = status !== possibleOrderStatusesLabels[order.status];
 
-            if (status === 'COMPLETED') {
+            Object.assign(foundOrder, order, {localReceiptDateTime, properties});
+            foundOrder.save();
+
+            if (status === possibleOrderStatusesLabels.COMPLETED) {
                 const productsList = await ProductModel.find({_id: {$in: productsIds}});
                 const productsById = {};
                 productsList.forEach(async (doc, index) => {
@@ -61,12 +60,12 @@ module.exports = (config) => {
                 io.emit('quantities', {productsIds, productsById});
             }
 
-            const {email, firstName, lastName} = foundOrder.buyer || {};
-            if (!email || !firstName || !lastName) {
-                return res.sendStatus(200);
-            }
-
             if (hasStatusBeenUpdated) {
+                io.emit('adminOrder', foundOrder);
+                const {email, firstName, lastName} = foundOrder.buyer || {};
+                if (!email || !firstName || !lastName) {
+                    return res.sendStatus(200);
+                }
                 try {
                     await sendMail(
                         'order',
@@ -95,7 +94,7 @@ module.exports = (config) => {
                 const extOrderId = res.createOrderRequestConfig.data.extOrderId;
 
                 // LOCAL_NEW_INITIATED
-                const localNewOrder = await OrderModel.findOneAndUpdate(
+                const localNewInitiatedOrder = await OrderModel.findOneAndUpdate(
                     {extOrderId},
                     {$set: Object.assign(req.body, res.createOrderRequestConfig.data, {
                         status: 'LOCAL_NEW_INITIATED',
@@ -103,6 +102,7 @@ module.exports = (config) => {
                     })},
                     {upsert: true, new: true, runValidators: true, setDefaultsOnInsert: true}
                 ).exec();
+                io.emit('adminOrder', localNewInitiatedOrder);
 
                 let updateAfterCreateOrderRequest;
                 try {
@@ -110,29 +110,30 @@ module.exports = (config) => {
                     updateAfterCreateOrderRequest = {orderId, redirectUri};
                 } catch (err) {
                     // LOCAL_NEW_REJECTED
-                    await OrderModel.findOneAndUpdate(
+                    const localNewRejectedOrder = await OrderModel.findOneAndUpdate(
                         {extOrderId},
-                        {$set: Object.assign(localNewOrder, {status: 'LOCAL_NEW_REJECTED', redirectUri: ''})},
+                        {$set: Object.assign(localNewInitiatedOrder, {status: 'LOCAL_NEW_REJECTED', redirectUri: ''})},
                         {new: true, runValidators: true}
                     ).exec();
+                    io.emit('adminOrder', localNewRejectedOrder);
                     return next(err);
                 }
 
                 // LOCAL_NEW_COMPLETED
-                let localOrderAfterCreateOrderRequest = localNewOrder;
+                let localNewCompletedOrder = localNewInitiatedOrder;
                 try {
-                    localOrderAfterCreateOrderRequest = await OrderModel.findOneAndUpdate(
+                    localNewCompletedOrder = await OrderModel.findOneAndUpdate(
                         {extOrderId},
-                        {$set: Object.assign(localNewOrder, updateAfterCreateOrderRequest, {status: 'LOCAL_NEW_COMPLETED'})},
+                        {$set: Object.assign(localNewInitiatedOrder, updateAfterCreateOrderRequest, {status: 'LOCAL_NEW_COMPLETED'})},
                         {new: true, runValidators: true}
                     ).exec();
                 } catch {}
 
                 res.json({
                     extOrderId,
-                    redirectUri: localOrderAfterCreateOrderRequest.redirectUri,
-                    productsIds: localOrderAfterCreateOrderRequest.productsIds,
-                    status: localOrderAfterCreateOrderRequest.status,
+                    redirectUri: localNewCompletedOrder.redirectUri,
+                    productsIds: localNewCompletedOrder.productsIds,
+                    status: localNewCompletedOrder.status,
                 });
             } catch (err) {
                 next(err);
