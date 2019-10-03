@@ -7,6 +7,7 @@ mongoose.connect(mongoDB, {
     autoCreate: !PRODUCTION_MODE,
     autoIndex: !PRODUCTION_MODE,
     useNewUrlParser: true,
+    useUnifiedTopology: true,
 });
 // Get Mongoose to use the global promise library
 mongoose.Promise = global.Promise;

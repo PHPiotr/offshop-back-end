@@ -15,7 +15,7 @@ module.exports = (config) => {
 
     router.get('/:slug', async (req, res, next) => {
         try {
-            const product = await ProductModel.findOne({slug: {$eq: req.params.slug}}, {active: 0}).exec();
+            const product = await ProductModel.findOne({slug: {$eq: req.params.slug}, active: {$eq: true}}).exec();
             if (product) {
                 res.json(product);
             } else {

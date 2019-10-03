@@ -4,8 +4,6 @@ if (process.env.NODE_ENV !== 'production') {
 }
 
 const express = require('express');
-const db = require('./db');
-const app = express();
 const http = require('http');
 const path = require('path');
 const cors = require('cors');
@@ -13,6 +11,11 @@ const helmet = require('helmet');
 const fileUpload = require('express-fileupload');
 const aws = require('aws-sdk');
 const axios = require('axios');
+
+const db = require('./db');
+const ioModule = require('./io');
+
+const app = express();
 
 // routes
 const authorize = require('./routes/authorize');
@@ -55,7 +58,10 @@ const DeliveryMethodModel = require('./models/DeliveryMethodModel');
 
 const PORT = process.env.PORT || 9000;
 const server = http.createServer(app);
-const io = require('socket.io')(server, {pingTimeout: 60000});
+
+ioModule.initialize(server, {pingTimeout: 60000});
+const io = ioModule.io();
+
 const s3 = new aws.S3({
     accessKeyId: process.env.AWS_ACCESS_KEY_ID,
     secretAccessKey:process.env.AWS_SECRET_ACCESS_KEY,

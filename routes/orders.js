@@ -38,17 +38,28 @@ module.exports = (config) => {
         }
 
         try {
-            const foundOrder = await OrderModel.findOne({orderId: {$eq: order.orderId}}).exec();
-            if (!foundOrder) {
-                return res.sendStatus(200);
+            let localOrder;
+            try {
+                localOrder = await OrderModel.findOne({orderId: {$eq: order.orderId}}).exec();
+            } catch (e) {
+                console.log('Error when finding order in local db', e);
+            } finally {
+                if (!localOrder) {
+                    return res.sendStatus(200);
+                }
             }
-            const {status, productsIds, products} = foundOrder;
+
+            const {status, productsIds, products} = localOrder;
             const hasStatusBeenUpdated = status !== possibleOrderStatusesLabels[order.status];
 
-            Object.assign(foundOrder, order, {localReceiptDateTime, properties});
-            foundOrder.save();
+            Object.assign(localOrder, order, {localReceiptDateTime, properties});
+            localOrder.save();
 
-            if (status === possibleOrderStatusesLabels.COMPLETED) {
+            if (!hasStatusBeenUpdated) {
+                return res.sendStatus(200);
+            }
+
+            if (order.status === 'COMPLETED') {
                 const productsList = await ProductModel.find({_id: {$in: productsIds}});
                 const productsById = {};
                 productsList.forEach(async (doc, index) => {
@@ -60,21 +71,19 @@ module.exports = (config) => {
                 io.emit('quantities', {productsIds, productsById});
             }
 
-            if (hasStatusBeenUpdated) {
-                io.emit('adminOrder', foundOrder);
-                const {email, firstName, lastName} = foundOrder.buyer || {};
-                if (!email || !firstName || !lastName) {
-                    return res.sendStatus(200);
-                }
-                try {
-                    await sendMail(
-                        'order',
-                        Object.assign(foundOrder, {productPath: process.env.PRODUCT_PATH}),
-                        process.env.EMAIL_ACCOUNT_FROM,
-                        `${firstName} ${lastName} <${email}>`);
-                } finally {
-                    return res.sendStatus(200);
-                }
+            io.to('admin').emit('adminUpdateOrder', localOrder);
+            const {email, firstName, lastName} = localOrder.buyer || {};
+            if (!email || !firstName || !lastName) {
+                return res.sendStatus(200);
+            }
+            try {
+                await sendMail(
+                    'order',
+                    Object.assign(localOrder, {productPath: process.env.PRODUCT_PATH}),
+                    process.env.EMAIL_ACCOUNT_FROM,
+                    `${firstName} ${lastName} <${email}>`);
+            } finally {
+                return res.sendStatus(200);
             }
 
         } catch (err) {
@@ -91,50 +100,56 @@ module.exports = (config) => {
         setCreateOrderRequestConfig,
         async (req, res, next) => {
             try {
-                const extOrderId = res.createOrderRequestConfig.data.extOrderId;
+                const {extOrderId} = req.createOrderRequestConfig.data;
 
-                // LOCAL_NEW_INITIATED
-                const localNewInitiatedOrder = await OrderModel.findOneAndUpdate(
+                // 1. Store order locally (status: LOCAL_NEW_INITIATED)
+                let localOrder = await OrderModel.findOneAndUpdate(
                     {extOrderId},
-                    {$set: Object.assign(req.body, res.createOrderRequestConfig.data, {
+                    {$set: Object.assign(req.body, req.createOrderRequestConfig.data, {
                         status: 'LOCAL_NEW_INITIATED',
-                        orderId: res.createOrderRequestConfig.data.extOrderId,
+                        orderId: extOrderId,
                     })},
                     {upsert: true, new: true, runValidators: true, setDefaultsOnInsert: true}
                 ).exec();
-                io.emit('adminOrder', localNewInitiatedOrder);
 
+                // 2. Send createOrderRequest to PayU
                 let updateAfterCreateOrderRequest;
                 try {
-                    const {data: {orderId, redirectUri}} = await axios(res.createOrderRequestConfig);
+                    const {data: {orderId, redirectUri}} = await axios(req.createOrderRequestConfig);
                     updateAfterCreateOrderRequest = {orderId, redirectUri};
-                } catch (err) {
-                    // LOCAL_NEW_REJECTED
-                    const localNewRejectedOrder = await OrderModel.findOneAndUpdate(
-                        {extOrderId},
-                        {$set: Object.assign(localNewInitiatedOrder, {status: 'LOCAL_NEW_REJECTED', redirectUri: ''})},
-                        {new: true, runValidators: true}
-                    ).exec();
-                    io.emit('adminOrder', localNewRejectedOrder);
-                    return next(err);
+                } catch (e) {
+
+                    // 3a. Not good. Try rejecting order locally (status: LOCAL_NEW_REJECTED)
+                    let error = e;
+                    try {
+                        localOrder = await OrderModel.findOneAndUpdate(
+                            {extOrderId},
+                            {$set: Object.assign(localOrder, {status: 'LOCAL_NEW_REJECTED', redirectUri: ''})},
+                            {new: true, runValidators: true}
+                        ).exec();
+                    } catch(e) {
+                        error = e;
+                    } finally {
+                        io.to('admin').emit('adminCreateOrder', localOrder);
+                        return next(error);
+                    }
                 }
 
-                // LOCAL_NEW_COMPLETED
-                let localNewCompletedOrder = localNewInitiatedOrder;
+                // 3b. All good. Try completing order locally (status: LOCAL_NEW_COMPLETED)
                 try {
-                    localNewCompletedOrder = await OrderModel.findOneAndUpdate(
+                    localOrder = await OrderModel.findOneAndUpdate(
                         {extOrderId},
-                        {$set: Object.assign(localNewInitiatedOrder, updateAfterCreateOrderRequest, {status: 'LOCAL_NEW_COMPLETED'})},
+                        {$set: Object.assign(localOrder, updateAfterCreateOrderRequest, {status: 'LOCAL_NEW_COMPLETED'})},
                         {new: true, runValidators: true}
                     ).exec();
-                } catch {}
+                } finally {
+                    io.to('admin').emit('adminCreateOrder', localOrder);
 
-                res.json({
-                    extOrderId,
-                    redirectUri: localNewCompletedOrder.redirectUri,
-                    productsIds: localNewCompletedOrder.productsIds,
-                    status: localNewCompletedOrder.status,
-                });
+                    res.json({
+                        extOrderId,
+                        redirectUri: localOrder.redirectUri,
+                    });
+                }
             } catch (err) {
                 next(err);
             }

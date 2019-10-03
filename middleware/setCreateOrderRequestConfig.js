@@ -3,7 +3,7 @@ module.exports = (req, res, next) => {
     const extOrderId = req.app.locals.db.Types.ObjectId().toString();
     const customerIp = req.ip;
 
-    res.createOrderRequestConfig = {
+    req.createOrderRequestConfig = {
         url: `${process.env.PAYU_API}/orders`,
         method: 'post',
         headers: {

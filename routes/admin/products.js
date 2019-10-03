@@ -77,13 +77,14 @@ module.exports = (config) => {
             }
 
             const currentProduct = await new ProductModel(req.body).save();
-            const {id} = currentProduct;
+            const {id, active} = currentProduct;
 
             const uploadedImagesData = await processUpload(req.files.img.data, id);
             Object.assign(currentProduct, {images: [uploadedImagesData]});
             await currentProduct.save();
 
-            io.emit('createProduct', currentProduct);
+            io.to('admin').emit('adminCreateProduct', {product: currentProduct, isActive: active});
+            io.to('users').emit('createProduct', {product: currentProduct, isActive: active});
             res.set('Location', `${process.env.API_URL}/admin/products/${id}`);
             res.status(201).json(currentProduct);
         } catch (e) {
@@ -98,6 +99,7 @@ module.exports = (config) => {
             if (!currentProduct) {
                 return res.send(404);
             }
+            const wasActive = currentProduct.active;
 
             let uploadedImagesData = null;
             if (Object.keys(req.files || {}).length) {
@@ -106,8 +108,10 @@ module.exports = (config) => {
 
             Object.assign(currentProduct, req.body, uploadedImagesData ? {images: [uploadedImagesData]} : {});
             await currentProduct.save();
+            const isActive = currentProduct.active;
 
-            io.emit('updateProduct', currentProduct);
+            io.to('admin').emit('adminUpdateProduct', {product: currentProduct, wasActive, isActive});
+            io.to('users').emit('updateProduct', {product: currentProduct, wasActive, isActive});
             res.set('Location', `${process.env.API_URL}/admin/products/${productId}`);
             res.json(currentProduct);
         } catch (e) {
@@ -121,6 +125,7 @@ module.exports = (config) => {
             if (!product) {
                 return res.send(404);
             }
+            const {active} = product;
             await ProductModel.deleteOne({ _id: product._id });
             try {
                 await Promise.all([
@@ -129,7 +134,8 @@ module.exports = (config) => {
             } catch (e) {
                 console.error(e);
             } finally {
-                io.emit('deleteProduct', product);
+                io.to('admin').emit('adminDeleteProduct', {product, wasActive: active});
+                io.to('users').emit('deleteProduct', {product, wasActive: active});
                 res.sendStatus(204);
             }
         } catch (e) {
