@@ -15,6 +15,7 @@ module.exports = (config) => {
         sendMail,
         axios,
         possibleOrderStatusesLabels,
+        statusesDescriptions,
     } = config;
 
     const productsCheck = productsCheckMiddleware(ProductModel);
@@ -79,7 +80,10 @@ module.exports = (config) => {
             try {
                 await sendMail(
                     'order',
-                    Object.assign(localOrder, {productPath: process.env.PRODUCT_PATH}),
+                    Object.assign(localOrder, {
+                        productPath: process.env.PRODUCT_PATH,
+                        statusDescription: statusesDescriptions[order.status],
+                    }),
                     process.env.EMAIL_ACCOUNT_FROM,
                     `${firstName} ${lastName} <${email}>`);
             } finally {

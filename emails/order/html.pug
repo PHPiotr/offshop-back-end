@@ -6,6 +6,8 @@ h1 #{description}
 h2 Status transakcji: #{status}
 
 div(class='card')
+  if statusDescription
+    p(class="primary") #{statusDescription}
   ul
     each id in productsIds
       li
