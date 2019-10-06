@@ -123,7 +123,7 @@ ul li div.list-item div.item-text {
     text-align: left;
 }
 
-span.primary {
+.primary {
     color: #202020;
     font-size: 16px;
     font-weight: 400;

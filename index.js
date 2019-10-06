@@ -49,7 +49,7 @@ const readFile = require('./utils/readFile');
 const s3UploadFile = require('./utils/s3UploadFile');
 const s3DeleteFiles = require('./utils/s3DeleteFiles');
 const sendMail = require('./utils/sendMail');
-const {possibleOrderStatusesLabels} = require('./utils/getPossibleOrderStatuses');
+const {possibleOrderStatusesLabels, statusesDescriptions} = require('./utils/getPossibleOrderStatuses');
 
 // models
 const OrderModel = require('./models/OrderModel');
@@ -100,6 +100,7 @@ app.use('/orders', orders({
     setCreateOrderRequestConfig,
     sendMail,
     possibleOrderStatusesLabels,
+    statusesDescriptions,
 }));
 app.use('/categories', categories);
 app.use('/products', products({
