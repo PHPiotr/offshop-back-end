@@ -19,7 +19,7 @@ module.exports = (err, req, res, next) => {
         res.statusCode = 422;
     }
 
-    if (err.name = 'CastError') {
+    if (err.name === 'CastError') {
         return res.send(404);
     }
 
