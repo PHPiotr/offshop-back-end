@@ -1,6 +1,12 @@
 module.exports = (config) => {
 
-    const {io, router, DeliveryMethodModel, queryOptionsCheck} = config;
+    const {
+        apiUrl,
+        io,
+        router,
+        DeliveryMethodModel,
+        queryOptionsCheck,
+    } = config;
 
     router.get('/', queryOptionsCheck(DeliveryMethodModel), async (req, res, next) => {
         try {
@@ -30,8 +36,9 @@ module.exports = (config) => {
             const {name, slug, unitPrice} = req.body;
             const deliveryMethod = await new DeliveryMethodModel({name, slug, unitPrice}).save();
 
-            io.emit('createDeliveryMethod', deliveryMethod);
-            res.set('Location', `${process.env.API_URL}/admin/delivery-methods/${deliveryMethod.id}`);
+            io.to('admin').emit('adminCreateDelivery', deliveryMethod);
+            io.to('users').emit('createDelivery', deliveryMethod);
+            res.set('Location', `${apiUrl}/admin/delivery-methods/${deliveryMethod.id}`);
             res.status(201).json(deliveryMethod);
         } catch (e) {
             return next(e);
@@ -40,25 +47,17 @@ module.exports = (config) => {
 
     router.put('/:deliveryMethodId', async (req, res, next) => {
         try {
-            const currentDeliveryMethod = await DeliveryMethodModel.findById(req.params.deliveryMethodId).exec();
-            if (!currentDeliveryMethod) {
-                return res.send(404);
-            }
-
-            const {name, slug, unitPrice} = req.body;
-
-            const updatedDeliveryMethod = await DeliveryMethodModel.findByIdAndUpdate(
-                req.params.deliveryMethodId,
-                {$set: {name, slug, unitPrice: unitPrice}},
-                {runValidators: true, new: true}
-            );
-
-            if (!updatedDeliveryMethod) {
+            const {params: {deliveryMethodId}, body: {name, slug, unitPrice}} = req;
+            const deliveryMethod = await DeliveryMethodModel.findById(deliveryMethodId).exec();
+            if (!deliveryMethod) {
                 return res.sendStatus(404);
             }
-            io.emit('updateDeliveryMethod', updatedDeliveryMethod);
-            res.set('Location', `${process.env.API_URL}/admin/delivery-methods/${updatedDeliveryMethod.id}`);
-            res.json(updatedDeliveryMethod);
+            Object.assign(deliveryMethod, {name, slug, unitPrice});
+            await deliveryMethod.save();
+            io.to('admin').emit('adminUpdateDelivery', deliveryMethod);
+            io.to('users').emit('updateDelivery', deliveryMethod);
+            res.set('Location', `${apiUrl}/admin/delivery-methods/${deliveryMethod.id}`);
+            res.json(deliveryMethod);
         } catch (e) {
             return next(e);
         }
@@ -71,7 +70,8 @@ module.exports = (config) => {
                 return res.send(404);
             }
             await DeliveryMethodModel.deleteOne({ _id: deliveryMethod._id });
-            io.emit('deleteDeliveryMethod', deliveryMethod);
+            io.to('admin').emit('adminDeleteDelivery', deliveryMethod);
+            io.to('users').emit('deleteDelivery', deliveryMethod);
             res.sendStatus(204);
         } catch (e) {
             return next(e);

@@ -57,6 +57,7 @@ const ProductModel = require('./models/ProductModel');
 const DeliveryMethodModel = require('./models/DeliveryMethodModel');
 
 const PORT = process.env.PORT || 9000;
+const apiUrl = process.env.API_URL;
 const server = http.createServer(app);
 
 ioModule.initialize(server, {pingTimeout: 60000});
@@ -139,6 +140,7 @@ app.use('/admin/products', productsManagement({
     },
 }));
 app.use('/admin/delivery-methods', deliveryMethodsManagement({
+    apiUrl,
     io,
     DeliveryMethodModel,
     router: express.Router(),
