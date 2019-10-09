@@ -20,7 +20,7 @@ module.exports = (err, req, res, next) => {
     }
 
     if (err.name === 'CastError') {
-        return res.send(404);
+        return res.sendStatus(404);
     }
 
     const responseStatusCode = parseInt(('' + res.statusCode).charAt(0), 10) > 3 ? res.statusCode : null;

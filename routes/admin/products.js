@@ -1,6 +1,13 @@
 module.exports = (config) => {
 
-    const {io, router, ProductModel, queryOptionsCheck, fileUtils} = config;
+    const {
+        apiUrl,
+        io,
+        router,
+        ProductModel,
+        queryOptionsCheck,
+        fileUtils,
+    } = config;
 
     const processUpload = async (buffer, id) => {
         try {
@@ -61,7 +68,7 @@ module.exports = (config) => {
         try {
             const product = await ProductModel.findById(req.params.productId).exec();
             if (!product) {
-                return res.send(404);
+                return res.sendStatus(404);
             }
             res.json(product);
         } catch (e) {
@@ -76,17 +83,17 @@ module.exports = (config) => {
                 throw new Error('No files were uploaded.');
             }
 
-            const currentProduct = await new ProductModel(req.body).save();
-            const {id, active} = currentProduct;
+            const product = await new ProductModel(req.body).save();
+            const {id, active} = product;
 
             const uploadedImagesData = await processUpload(req.files.img.data, id);
-            Object.assign(currentProduct, {images: [uploadedImagesData]});
-            await currentProduct.save();
+            Object.assign(product, {images: [uploadedImagesData]});
+            await product.save();
 
-            io.to('admin').emit('adminCreateProduct', {product: currentProduct, isActive: active});
-            io.to('users').emit('createProduct', {product: currentProduct, isActive: active});
-            res.set('Location', `${process.env.API_URL}/admin/products/${id}`);
-            res.status(201).json(currentProduct);
+            io.to('admin').emit('adminCreateProduct', {product, isActive: active});
+            io.to('users').emit('createProduct', {product, isActive: active});
+            res.set('Location', `${apiUrl}/admin/products/${id}`);
+            res.status(201).json(product);
         } catch (e) {
             return next(e);
         }
@@ -94,26 +101,26 @@ module.exports = (config) => {
 
     router.put('/:productId', async (req, res, next) => {
         try {
-            const {productId} = req.params;
-            const currentProduct = await ProductModel.findById(productId).exec();
-            if (!currentProduct) {
-                return res.send(404);
+            const {params: {productId}} = req;
+            const product = await ProductModel.findById(productId).exec();
+            if (!product) {
+                return res.sendStatus(404);
             }
-            const wasActive = currentProduct.active;
+            const wasActive = product.active;
 
             let uploadedImagesData = null;
             if (Object.keys(req.files || {}).length) {
                 uploadedImagesData = await processUpload(req.files.img.data, productId);
             }
 
-            Object.assign(currentProduct, req.body, uploadedImagesData ? {images: [uploadedImagesData]} : {});
-            await currentProduct.save();
-            const isActive = currentProduct.active;
+            Object.assign(product, req.body, uploadedImagesData ? {images: [uploadedImagesData]} : {});
+            await product.save();
+            const isActive = product.active;
 
-            io.to('admin').emit('adminUpdateProduct', {product: currentProduct, wasActive, isActive});
-            io.to('users').emit('updateProduct', {product: currentProduct, wasActive, isActive});
-            res.set('Location', `${process.env.API_URL}/admin/products/${productId}`);
-            res.json(currentProduct);
+            io.to('admin').emit('adminUpdateProduct', {product, wasActive, isActive});
+            io.to('users').emit('updateProduct', {product, wasActive, isActive});
+            res.set('Location', `${apiUrl}/admin/products/${productId}`);
+            res.json(product);
         } catch (e) {
             return next(e);
         }
@@ -121,9 +128,10 @@ module.exports = (config) => {
 
     router.delete('/:productId', async (req, res, next) => {
         try {
-            const product = await ProductModel.findById(req.params.productId).exec();
+            const {params: {productId}} = req;
+            const product = await ProductModel.findById(productId).exec();
             if (!product) {
-                return res.send(404);
+                return res.sendStatus(404);
             }
             const {active} = product;
             await ProductModel.deleteOne({ _id: product._id });

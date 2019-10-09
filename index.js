@@ -126,6 +126,7 @@ app.use('/admin/orders', ordersManagement({
     queryOptionsCheck,
 }));
 app.use('/admin/products', productsManagement({
+    apiUrl,
     io,
     ProductModel,
     router: express.Router(),

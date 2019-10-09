@@ -23,7 +23,7 @@ module.exports = (config) => {
         try {
             const deliveryMethod = await DeliveryMethodModel.findById(req.params.deliveryMethodId).exec();
             if (!deliveryMethod) {
-                return res.send(404);
+                return res.sendStatus(404);
             }
             res.json(deliveryMethod);
         } catch (e) {
@@ -67,7 +67,7 @@ module.exports = (config) => {
         try {
             const deliveryMethod = await DeliveryMethodModel.findById(req.params.deliveryMethodId).exec();
             if (!deliveryMethod) {
-                return res.send(404);
+                return res.sendStatus(404);
             }
             await DeliveryMethodModel.deleteOne({ _id: deliveryMethod._id });
             io.to('admin').emit('adminDeleteDelivery', deliveryMethod);

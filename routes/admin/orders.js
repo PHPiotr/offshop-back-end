@@ -19,7 +19,7 @@ module.exports = (config) => {
         try {
             const doc = await OrderModel.findOne({extOrderId: req.params.extOrderId}).exec();
             if (!doc) {
-                return res.send(404);
+                return res.sendStatus(404);
             }
             res.json(doc);
         } catch (e) {
@@ -32,7 +32,7 @@ module.exports = (config) => {
         try {
             const doc = await OrderModel.findOne({extOrderId: req.params.extOrderId}).exec();
             if (!doc) {
-                return res.send(404);
+                return res.sendStatus(404);
             }
 
             const cancelOrderResponse = await axios({
@@ -66,7 +66,7 @@ module.exports = (config) => {
         try {
             const doc = await OrderModel.findOne({extOrderId: req.params.extOrderId}).exec();
             if (!doc) {
-                return res.send(404);
+                return res.sendStatus(404);
             }
 
             await OrderModel.findOneAndUpdate(
@@ -86,7 +86,7 @@ module.exports = (config) => {
         try {
             const doc = await OrderModel.findOne({extOrderId: req.params.extOrderId}).exec();
             if (!doc) {
-                return res.send(404);
+                return res.sendStatus(404);
             }
 
             const refundOrderResponse = await axios({
