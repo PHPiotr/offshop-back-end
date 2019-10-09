@@ -25,7 +25,7 @@ const DeliveryMethodSchema = new Schema({
     timestamps: true,
 });
 
-DeliveryMethodSchema.pre('save', async function() {
+DeliveryMethodSchema.pre('validate', async function() {
     this.slug = slugify(this.slug || this.name, {lower: true});
 });
 

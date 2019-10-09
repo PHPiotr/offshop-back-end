@@ -57,7 +57,7 @@ const ProductSchema = new Schema({
     timestamps: true,
 });
 
-ProductSchema.pre('save', async function() {
+ProductSchema.pre('validate', async function() {
     this.slug = slugify(this.slug || this.name, {lower: true});
 });
 
