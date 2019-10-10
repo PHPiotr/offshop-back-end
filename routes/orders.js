@@ -31,7 +31,7 @@ module.exports = (config) => {
                     {$set: {refund}},
                     {new: true, runValidators: true}
                 ).exec();
-                io.emit('refund', {[refundedOrder.extOrderId]: refundedOrder});
+                io.to('admin').emit('adminRefund', {[refundedOrder.extOrderId]: refundedOrder});
             } finally {
                 return res.sendStatus(200);
             }
