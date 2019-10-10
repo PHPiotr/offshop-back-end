@@ -52,7 +52,6 @@ OrderSchema.set('toJSON', {
     virtuals: true,
     versionKey: false,
     transform: function(doc, ret) {
-        ret.status = possibleOrderStatusesLabels[ret.status];
         delete ret._id;
     },
 });

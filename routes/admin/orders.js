@@ -5,7 +5,7 @@ module.exports = (config) => {
     // listOrders
     router.get('/', queryOptionsCheck(OrderModel), async (req, res, next) => {
         try {
-            const projection = null;
+            const projection = 'extOrderId status totalAmount orderCreateDate';
             const query = OrderModel.find({status: {$nin: ['LOCAL_SOFT_DELETED']}}, projection, req.query.validQueryOptions);
             const docs = await query.exec();
             res.json(docs);
