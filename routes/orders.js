@@ -14,7 +14,6 @@ module.exports = (config) => {
         setCreateOrderRequestConfig,
         sendMail,
         axios,
-        possibleOrderStatusesLabels,
         statusesDescriptions,
     } = config;
 
@@ -51,7 +50,7 @@ module.exports = (config) => {
             }
 
             const {status, productsIds, products} = localOrder;
-            const hasStatusBeenUpdated = status !== possibleOrderStatusesLabels[order.status];
+            const hasStatusBeenUpdated = status !== order.status;
 
             Object.assign(localOrder, order, {localReceiptDateTime, properties});
             localOrder.save();
