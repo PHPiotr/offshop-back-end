@@ -1,5 +1,5 @@
 const mongoose = require('mongoose');
-const {possibleOrderStatuses, possibleOrderStatusesLabels} = require('../utils/getPossibleOrderStatuses');
+const {possibleOrderStatuses} = require('../utils/getPossibleOrderStatuses');
 const Schema = mongoose.Schema;
 const ObjectId = Schema.Types.ObjectId;
 
@@ -24,7 +24,6 @@ const OrderSchema = new Schema({
         type: String,
         enum: possibleOrderStatuses,
         index: true,
-        get: v => possibleOrderStatusesLabels[v],
     },
     redirectUri: {
         type: String,
