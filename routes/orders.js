@@ -13,8 +13,10 @@ module.exports = (config) => {
         deliveryMethodCheckMiddleware,
         setCreateOrderRequestConfig,
         sendMail,
+        emailFrom,
         axios,
         statusesDescriptions,
+        productPath,
     } = config;
 
     const productsCheck = productsCheckMiddleware(ProductModel);
@@ -22,23 +24,41 @@ module.exports = (config) => {
 
     router.post('/notify', verifyNotificationSignature, async (req, res, next) => {
 
+        let localOrder;
+
         const {body: {order, orderId, localReceiptDateTime, properties, refund}} = req;
 
         if (refund) {
             try {
-                const refundedOrder = await OrderModel.findOneAndUpdate(
-                    {orderId: {$eq: orderId}},
-                    {$set: {refund}},
-                    {new: true, runValidators: true}
-                ).exec();
-                io.to('admin').emit('adminRefund', {[refundedOrder.extOrderId]: refundedOrder});
+                localOrder = await OrderModel.findOne({orderId: {$eq: orderId}}).exec();
+                if (localOrder.refund && localOrder.refund.status === refund.status) {
+                    return res.sendStatus(200);
+                }
+                const mergedRefund = Object.assign({},(localOrder.refund || {}), refund);
+                Object.assign(localOrder, {refund: mergedRefund});
+                localOrder.save();
+                io.to('admin').emit('adminRefund', localOrder.refund);
+                const {email, firstName, lastName} = localOrder.buyer || {};
+                if (!email || !firstName || !lastName) {
+                    return res.sendStatus(200);
+                }
+                try {
+                    await sendMail(
+                        'refund',
+                        Object.assign(localOrder, {productPath}),
+                        emailFrom,
+                        `${firstName} ${lastName} <${email}>`);
+                } finally {
+                    return res.sendStatus(200);
+                }
+            } catch (e) {
+                console.log('Error when updating refund in local db', e);
             } finally {
                 return res.sendStatus(200);
             }
         }
 
         try {
-            let localOrder;
             try {
                 localOrder = await OrderModel.findOne({orderId: {$eq: order.orderId}}).exec();
             } catch (e) {
@@ -80,10 +100,10 @@ module.exports = (config) => {
                 await sendMail(
                     'order',
                     Object.assign(localOrder, {
-                        productPath: process.env.PRODUCT_PATH,
+                        productPath,
                         statusDescription: statusesDescriptions[order.status],
                     }),
-                    process.env.EMAIL_ACCOUNT_FROM,
+                    emailFrom,
                     `${firstName} ${lastName} <${email}>`);
             } finally {
                 return res.sendStatus(200);

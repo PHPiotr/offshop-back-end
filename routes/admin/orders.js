@@ -106,11 +106,11 @@ module.exports = (config) => {
             try {
                 await OrderModel.findOneAndUpdate(
                     {extOrderId: req.params.extOrderId},
-                    {$set: {refund: refundOrderResponse.data}},
+                    {$set: {refund: refundOrderResponse.data.refund}},
                     {runValidators: true}
                 ).exec();
             } finally {
-                res.status(refundOrderResponse.status).json(refundOrderResponse.data);
+                res.status(refundOrderResponse.status).json(refundOrderResponse.data.refund);
             }
 
         } catch (e) {

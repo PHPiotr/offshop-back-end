@@ -3,12 +3,32 @@ head
 
 h1 #{description}
 
-h2 Status zamówienia: #{status}
+h2 Status zwrotu zamówienia: #{refund.status}
 
 div(class='card')
-  if statusDescription
-    p(class="primary") #{statusDescription}
+  p(class="primary") Wykonaliśmy zwrot środków na Twoje konto.
   ul
+    li
+      div(class='list-item')
+        div(class='item-text')
+          span(class='primary') Status zwrotu
+          p(class='secondary')
+            span #{refund.status}
+    hr
+    li
+      div(class='list-item')
+        div(class='item-text')
+          span(class='primary') Opis zwrotu
+          p(class='secondary')
+            span #{refund.description}
+    hr
+    li
+      div(class='list-item')
+        div(class='item-text')
+          span(class='primary') Kwota zwrotu
+          p(class='secondary')
+            span #{(refund.amoount / 100).toFixed(2)} #{refund.currencyCode}
+    hr
     each id in productsIds
       li
         div(class='list-item')
@@ -30,7 +50,7 @@ div(class='card')
         div(class='item-text')
           span(class='primary') #{deliveryMethod.name} (#{(totalWeight / 100)} kg)
           p(class='secondary')
-            span #{(deliveryMethod.unitPrice / 100).toFixed(2)} #{currencyCode}ł / kg x #{(totalWeight / 100).toFixed(2)} kg = #{((totalAmount - totalWithoutDelivery) / 100).toFixed(2)} #{currencyCode}
+            span #{(deliveryMethod.unitPrice / 100).toFixed(2)} #{currencyCode} / kg x #{(totalWeight / 100).toFixed(2)} kg = #{((totalAmount - totalWithoutDelivery) / 100).toFixed(2)} #{currencyCode}
     hr
     li
       div(class='list-item')

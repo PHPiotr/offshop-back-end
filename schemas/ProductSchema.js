@@ -65,6 +65,9 @@ ProductSchema.set('toJSON', {
     virtuals: true,
     versionKey: false,
     transform: function(doc, ret) {
+        ret.stock = '' + ret.stock;
+        ret.unitPrice = '' + ret.unitPrice;
+        ret.weight = '' + ret.weight;
         delete ret._id;
     },
 });
