@@ -58,6 +58,8 @@ const DeliveryMethodModel = require('./models/DeliveryMethodModel');
 
 const PORT = process.env.PORT || 9000;
 const apiUrl = process.env.API_URL;
+const emailFrom = process.env.EMAIL_ACCOUNT_FROM;
+const productPath = process.env.PRODUCT_PATH;
 const server = http.createServer(app);
 
 ioModule.initialize(server, {pingTimeout: 60000});
@@ -100,7 +102,9 @@ app.use('/orders', orders({
     deliveryMethodCheckMiddleware,
     setCreateOrderRequestConfig,
     sendMail,
+    emailFrom,
     statusesDescriptions,
+    productPath,
 }));
 app.use('/categories', categories);
 app.use('/products', products({

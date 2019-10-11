@@ -14,7 +14,7 @@ const deliveryMethodCheck = DeliveryMethodModel => async (req, res, next) => {
                 res.status(400);
                 return next(new Error('Delivery method is nt active'));
             }
-            if (deliveryMethod.unitPrice !== doc.unitPrice) {
+            if (Number(deliveryMethod.unitPrice) !== doc.unitPrice) {
                 res.status(400);
                 return next(new Error('Wrong delivery method unit price'));
             }
