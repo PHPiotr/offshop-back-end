@@ -38,7 +38,17 @@ const OrderSchema = new Schema({
     shippingMethod: Object,
     productsIds: [ObjectId],
     productsById: Object,
-    refund: Object,
+    refund: {
+        type: Object,
+        get: function(refund) {
+            if (refund) {
+                return refund;
+            }
+            return {
+                status: '',
+            };
+        }
+    },
     localReceiptDateTime: Date,
     properties: [Object],
 }, {
