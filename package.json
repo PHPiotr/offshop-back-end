@@ -8,7 +8,7 @@
     "npm": "6.9.0"
   },
   "dependencies": {
-    "aws-sdk": "^2.586.0",
+    "aws-sdk": "^2.588.0",
     "axios": "^0.19.0",
     "cors": "^2.8.5",
     "email-templates": "^6.0.6",
@@ -16,10 +16,10 @@
     "express-fileupload": "^1.1.6",
     "express-jwt": "^5.3.1",
     "helmet": "^3.21.2",
-    "mongodb": "^3.3.5",
+    "mongodb": "^3.4.0",
     "mongoose": "^5.8.0",
     "mongoose-unique-validator": "^2.0.3",
-    "nodemailer": "^6.4.1",
+    "nodemailer": "^6.4.2",
     "pug": "^2.0.4",
     "request": "^2.88.0",
     "serverless-offline": "^5.12.1",
@@ -31,7 +31,7 @@
   },
   "devDependencies": {
     "dotenv": "^8.2.0",
-    "nodemon": "^2.0.1",
+    "nodemon": "^2.0.2",
     "serverless-dynamodb-client": "0.0.2"
   },
   "scripts": {
