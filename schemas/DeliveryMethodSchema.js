@@ -26,7 +26,7 @@ const DeliveryMethodSchema = new Schema({
 });
 
 DeliveryMethodSchema.pre('validate', async function() {
-    this.slug = slugify(this.slug || this.name, {lower: true});
+    this.slug = slugify(this.name, {lower: true});
 });
 
 DeliveryMethodSchema.set('toJSON', {
