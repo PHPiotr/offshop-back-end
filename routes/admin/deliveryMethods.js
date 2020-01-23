@@ -36,8 +36,8 @@ module.exports = (config) => {
             const {name, slug, unitPrice} = req.body;
             const deliveryMethod = await new DeliveryMethodModel({name, slug, unitPrice}).save();
 
-            io.to('admin').emit('adminCreateDelivery', deliveryMethod);
-            io.to('users').emit('createDelivery', deliveryMethod);
+            io.to('admin').emit('adminCreateDelivery', {deliveryMethod});
+            io.to('users').emit('createDelivery', {deliveryMethod});
             res.set('Location', `${apiUrl}/admin/delivery-methods/${deliveryMethod.id}`);
             res.status(201).json(deliveryMethod);
         } catch (e) {
@@ -54,8 +54,8 @@ module.exports = (config) => {
             }
             Object.assign(deliveryMethod, {name, slug, unitPrice});
             await deliveryMethod.save();
-            io.to('admin').emit('adminUpdateDelivery', deliveryMethod);
-            io.to('users').emit('updateDelivery', deliveryMethod);
+            io.to('admin').emit('adminUpdateDelivery', {deliveryMethod});
+            io.to('users').emit('updateDelivery', {deliveryMethod});
             res.set('Location', `${apiUrl}/admin/delivery-methods/${deliveryMethod.id}`);
             res.json(deliveryMethod);
         } catch (e) {
@@ -70,8 +70,8 @@ module.exports = (config) => {
                 return res.sendStatus(404);
             }
             await DeliveryMethodModel.deleteOne({ _id: deliveryMethod._id });
-            io.to('admin').emit('adminDeleteDelivery', deliveryMethod);
-            io.to('users').emit('deleteDelivery', deliveryMethod);
+            io.to('admin').emit('adminDeleteDelivery', {deliveryMethod});
+            io.to('users').emit('deleteDelivery', {deliveryMethod});
             res.sendStatus(204);
         } catch (e) {
             return next(e);
