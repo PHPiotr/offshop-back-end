@@ -37,7 +37,7 @@ module.exports = (config) => {
                 const mergedRefund = Object.assign({},(localOrder.refund || {}), refund);
                 Object.assign(localOrder, {refund: mergedRefund});
                 localOrder.save();
-                io.to('admin').emit('adminRefund', {refund: localOrder.refund, extOrderId: localOrder.extOrderId});
+                io.to('admin').emit('adminRefund', {order: localOrder});
                 const {email, firstName, lastName} = localOrder.buyer || {};
                 if (!email || !firstName || !lastName) {
                     return res.sendStatus(200);
