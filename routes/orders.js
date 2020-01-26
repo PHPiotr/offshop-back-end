@@ -91,7 +91,7 @@ module.exports = (config) => {
                 io.emit('quantities', {productsIds, productsById});
             }
 
-            io.to('admin').emit('adminUpdateOrder', localOrder);
+            io.to('admin').emit('adminUpdateOrder', {order: localOrder});
             const {email, firstName, lastName} = localOrder.buyer || {};
             if (!email || !firstName || !lastName) {
                 return res.sendStatus(200);
@@ -153,7 +153,7 @@ module.exports = (config) => {
                     } catch(e) {
                         error = e;
                     } finally {
-                        io.to('admin').emit('adminCreateOrder', localOrder);
+                        io.to('admin').emit('adminCreateOrder', {order: localOrder});
                         return next(error);
                     }
                 }
@@ -166,7 +166,7 @@ module.exports = (config) => {
                         {new: true, runValidators: true}
                     ).exec();
                 } finally {
-                    io.to('admin').emit('adminCreateOrder', localOrder);
+                    io.to('admin').emit('adminCreateOrder', {order: localOrder});
 
                     res.json({
                         extOrderId,
