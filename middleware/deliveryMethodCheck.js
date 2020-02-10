@@ -28,7 +28,7 @@ const deliveryMethodCheck = DeliveryMethodModel => async (req, res, next) => {
             }
             const expectedTotal = Math.round(doc.unitPrice * Number(req.body.totalWeight) / 100);
             const receivedTotal = Number(req.body.totalAmount) - Number(req.body.totalWithoutDelivery);
-            if (expectedTotal !== receivedTotal) {
+            if (receivedTotal > 0 && expectedTotal !== receivedTotal) {
                 res.status(400);
                 return next(new Error('Wrong delivery cost'));
             }
