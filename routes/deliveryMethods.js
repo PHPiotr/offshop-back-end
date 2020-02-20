@@ -1,15 +1,13 @@
-const queryOptionsCheck = require('../middleware/queryOptionsCheck');
+module.exports = config => {
 
-module.exports = (config) => {
-
-    const {io, router, model, DeliveryMethodSchema, jwtCheck} = config;
+    const {router, model, DeliveryMethodSchema, queryOptionsCheck} = config;
 
     const DeliveryMethodModel = model('Delivery', DeliveryMethodSchema);
 
     router.get('/', queryOptionsCheck(DeliveryMethodModel), async (req, res, next) => {
         try {
             const projection = null;
-            const query = DeliveryMethodModel.find({}, projection, req.query.validQueryOptions);
+            const query = DeliveryMethodModel.find({active: true}, projection, req.query.validQueryOptions);
             const docs = await query.exec();
             res.json(docs);
         } catch (err) {
@@ -17,27 +15,17 @@ module.exports = (config) => {
         }
     });
 
-    router.get('/:slug', (req, res, next) => {
-        res.json({});
-    });
-
-    router.post('/', jwtCheck(), async (req, res, next) => {
+    router.get('/:slug', async (req, res, next) => {
         try {
-            const delivery = await new DeliveryMethodModel(req.body).save();
-            io.emit('createDelivery', delivery);
-            res.set('Location', `${process.env.API_URL}/delivery-methods/${delivery.slug}`);
-            res.status(201).json(delivery);
+            const deliveryMethod = await DeliveryMethodModel.findOne({slug: {$eq: req.params.slug}, active: {$eq: true}}).exec();
+            if (deliveryMethod) {
+                res.json(deliveryMethod);
+            } else {
+                res.sendStatus(404);
+            }
         } catch (e) {
-            return next(e);
+            next(e);
         }
-    });
-
-    router.put('/:slug', jwtCheck(), (req, res, next) => {
-        res.json({});
-    });
-
-    router.delete('/:slug', jwtCheck(), (req, res, next) => {
-        res.json({});
     });
 
     return router;

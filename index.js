@@ -122,6 +122,7 @@ app.use('/delivery-methods', deliveryMethods({
     model,
     DeliveryMethodSchema,
     router: express.Router(),
+    queryOptionsCheck,
 }));
 app.use('/pay-methods', payMethods({router: express.Router()}));
 
