@@ -3,9 +3,10 @@ module.exports = (config) => {
     const {
         io,
         router,
-        OrderModel,
-        ProductModel,
-        DeliveryMethodModel,
+        model,
+        OrderSchema,
+        ProductSchema,
+        DeliveryMethodSchema,
         accessTokenCheck,
         orderCreateParamsCheck,
         verifyNotificationSignature,
@@ -19,6 +20,9 @@ module.exports = (config) => {
         productPath,
     } = config;
 
+    const DeliveryMethodModel = model('Delivery', DeliveryMethodSchema);
+    const OrderModel = model('Order', OrderSchema);
+    const ProductModel = model('Product', ProductSchema);
     const productsCheck = productsCheckMiddleware(ProductModel);
     const deliveryMethodCheck = deliveryMethodCheckMiddleware(DeliveryMethodModel);
 

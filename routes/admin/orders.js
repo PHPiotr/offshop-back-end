@@ -1,6 +1,8 @@
 module.exports = (config) => {
 
-    const {axios, io, router, OrderModel, queryOptionsCheck} = config;
+    const {axios, io, router, model, OrderSchema, queryOptionsCheck} = config;
+
+    const OrderModel = model('Order', OrderSchema);
 
     // listOrders
     router.get('/', queryOptionsCheck(OrderModel), async (req, res, next) => {

@@ -4,9 +4,12 @@ module.exports = (config) => {
         apiUrl,
         io,
         router,
-        DeliveryMethodModel,
+        model,
+        DeliveryMethodSchema,
         queryOptionsCheck,
     } = config;
+
+    const DeliveryMethodModel = model('Delivery', DeliveryMethodSchema);
 
     router.get('/', queryOptionsCheck(DeliveryMethodModel), async (req, res, next) => {
         try {

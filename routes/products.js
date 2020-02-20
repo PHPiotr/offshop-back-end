@@ -1,6 +1,8 @@
-module.exports = (config) => {
+module.exports = config => {
 
-    const {router, ProductModel, queryOptionsCheck} = config;
+    const {router, queryOptionsCheck, model, ProductSchema} = config;
+
+    const ProductModel = model('Product', ProductSchema);
 
     router.get('/', queryOptionsCheck(ProductModel), async (req, res, next) => {
         try {

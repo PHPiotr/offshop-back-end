@@ -12,6 +12,15 @@ const fileUpload = require('express-fileupload');
 const aws = require('aws-sdk');
 const axios = require('axios');
 
+const {model, Schema} = require('mongoose');
+const uniqueValidator = require('mongoose-unique-validator');
+const slugify = require('slugify');
+const {possibleOrderStatuses} = require('./utils/getPossibleOrderStatuses');
+
+const DeliveryMethodSchema = require('./schemas/DeliveryMethodSchema')({Schema, slugify});
+const OrderSchema = require('./schemas/OrderSchema')({Schema, possibleOrderStatuses});
+const ProductSchema = require('./schemas/ProductSchema')({Schema, uniqueValidator, slugify});
+
 const db = require('./db');
 const ioModule = require('./io');
 
@@ -20,7 +29,6 @@ const app = express();
 // routes
 const authorize = require('./routes/authorize');
 const orders = require('./routes/orders');
-const categories = require('./routes/categories');
 const products = require('./routes/products');
 const deliveryMethods = require('./routes/deliveryMethods');
 const payMethods = require('./routes/payMethods');
@@ -50,11 +58,6 @@ const s3UploadFile = require('./utils/s3UploadFile');
 const s3DeleteFiles = require('./utils/s3DeleteFiles');
 const sendMail = require('./utils/sendMail');
 const {statusesDescriptions} = require('./utils/getPossibleOrderStatuses');
-
-// models
-const OrderModel = require('./models/OrderModel');
-const ProductModel = require('./models/ProductModel');
-const DeliveryMethodModel = require('./models/DeliveryMethodModel');
 
 const PORT = process.env.PORT || 9000;
 const apiUrl = process.env.API_URL;
@@ -92,9 +95,10 @@ app.use('/orders', orders({
     io,
     axios,
     router: express.Router(),
-    OrderModel,
-    ProductModel,
-    DeliveryMethodModel,
+    model,
+    DeliveryMethodSchema,
+    OrderSchema,
+    ProductSchema,
     accessTokenCheck,
     orderCreateParamsCheck,
     verifyNotificationSignature,
@@ -106,16 +110,17 @@ app.use('/orders', orders({
     statusesDescriptions,
     productPath,
 }));
-app.use('/categories', categories);
 app.use('/products', products({
-    ProductModel,
+    model,
+    ProductSchema,
     router: express.Router(),
     queryOptionsCheck,
 }));
 app.use('/delivery-methods', deliveryMethods({
     io,
     jwtCheck,
-    DeliveryMethodModel,
+    model,
+    DeliveryMethodSchema,
     router: express.Router(),
 }));
 app.use('/pay-methods', payMethods({router: express.Router()}));
@@ -124,14 +129,16 @@ app.use('/pay-methods', payMethods({router: express.Router()}));
 app.use('/admin/orders', ordersManagement({
     io,
     axios,
-    OrderModel,
+    model,
+    OrderSchema,
     router: express.Router(),
     queryOptionsCheck,
 }));
 app.use('/admin/products', productsManagement({
     apiUrl,
     io,
-    ProductModel,
+    model,
+    ProductSchema,
     router: express.Router(),
     queryOptionsCheck,
     fileUtils: {
@@ -146,7 +153,8 @@ app.use('/admin/products', productsManagement({
 app.use('/admin/delivery-methods', deliveryMethodsManagement({
     apiUrl,
     io,
-    DeliveryMethodModel,
+    model,
+    DeliveryMethodSchema,
     router: express.Router(),
     queryOptionsCheck,
 }));
