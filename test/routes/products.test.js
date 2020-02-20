@@ -1,4 +1,7 @@
 const express = require('express');
+const {Schema} = require('mongoose');
+const uniqueValidator = require('mongoose-unique-validator');
+const slugify = require('slugify');
 const chai = require('chai');
 const chaiHttp = require('chai-http');
 const products = require('../../routes/products');
@@ -8,20 +11,21 @@ const errorHandler = require('../../routes/errorHandler');
 chai.use(chaiHttp);
 chai.should();
 
+const ProductSchema = require('../../schemas/ProductSchema')({Schema, uniqueValidator, slugify});
+
 describe('products', () => {
 
     it('should fetch products', async () => {
         const app = express();
         const router = express.Router();
         app.use('/products', products({
-            ProductModel: {
+            model: (name, schema) => ({
                 find: () => ({
                     exec: async () => JSON.stringify(['Foo']),
                 }),
-                schema: {
-                    paths: {},
-                },
-            },
+                schema,
+            }),
+            ProductSchema,
             router,
             queryOptionsCheck,
         }));
@@ -41,14 +45,15 @@ describe('products', () => {
         const app = express();
         const router = express.Router();
         app.use('/products', products({
-            ProductModel: {
+            model: (name, schema) => ({
                 find: () => ({
-                    exec: async () => {throw new Error('Foo');},
+                    exec: async () => {
+                        throw new Error('Foo');
+                    },
                 }),
-                schema: {
-                    paths: {},
-                },
-            },
+                schema,
+            }),
+            ProductSchema,
             router,
             queryOptionsCheck,
         }));
@@ -66,14 +71,13 @@ describe('products', () => {
         const app = express();
         const router = express.Router();
         app.use('/products', products({
-            ProductModel: {
+            model: (name, schema) => ({
                 findOne: () => ({
                     exec: async () => JSON.stringify({foo: 'bar'}),
                 }),
-                schema: {
-                    paths: {},
-                },
-            },
+                schema,
+            }),
+            ProductSchema,
             router,
             queryOptionsCheck,
         }));
@@ -91,14 +95,13 @@ describe('products', () => {
         const app = express();
         const router = express.Router();
         app.use('/products', products({
-            ProductModel: {
+            model: (name, schema) => ({
                 findOne: () => ({
                     exec: async () => null,
                 }),
-                schema: {
-                    paths: {},
-                },
-            },
+                schema,
+            }),
+            ProductSchema,
             router,
             queryOptionsCheck,
         }));
@@ -114,14 +117,15 @@ describe('products', () => {
         const app = express();
         const router = express.Router();
         app.use('/products', products({
-            ProductModel: {
+            model: (name, schema) => ({
                 findOne: () => ({
-                    exec: async () => {throw new Error('Foo');},
+                    exec: async () => {
+                        throw new Error('Foo');
+                    },
                 }),
-                schema: {
-                    paths: {},
-                },
-            },
+                schema,
+            }),
+            ProductSchema,
             router,
             queryOptionsCheck,
         }));

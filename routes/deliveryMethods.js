@@ -2,7 +2,9 @@ const queryOptionsCheck = require('../middleware/queryOptionsCheck');
 
 module.exports = (config) => {
 
-    const {io, router, DeliveryMethodModel, jwtCheck} = config;
+    const {io, router, model, DeliveryMethodSchema, jwtCheck} = config;
+
+    const DeliveryMethodModel = model('Delivery', DeliveryMethodSchema);
 
     router.get('/', queryOptionsCheck(DeliveryMethodModel), async (req, res, next) => {
         try {

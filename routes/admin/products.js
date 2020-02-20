@@ -4,10 +4,13 @@ module.exports = (config) => {
         apiUrl,
         io,
         router,
-        ProductModel,
+        model,
+        ProductSchema,
         queryOptionsCheck,
         fileUtils,
     } = config;
+
+    const ProductModel = model('Product', ProductSchema);
 
     const processUpload = async (buffer, id) => {
         try {
