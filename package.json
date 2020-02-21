@@ -36,8 +36,7 @@
     "dotenv": "^8.2.0",
     "mocha": "^7.0.1",
     "nodemon": "^2.0.2",
-    "nyc": "^15.0.0",
-    "serverless-dynamodb-client": "0.0.2"
+    "nyc": "^15.0.0"
   },
   "scripts": {
     "start": "node index",
