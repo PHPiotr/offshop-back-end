@@ -3,7 +3,7 @@ const DEFAULT_ORDER = -1;
 const DEFAULT_LIMIT = null;
 const DEFAULT_SKIP = 0;
 
-const ascendingValues = ['asc', 'ASC', '1', 1, true, 'true'];
+const ascendingValues = ['asc', '1', 'true'];
 
 const defaultOptions = {
     sort: {
@@ -13,31 +13,53 @@ const defaultOptions = {
     skip: DEFAULT_SKIP,
 };
 
-module.exports = (model) => {
+const getValidInt = value => {
+    const parsedInt = parseInt(value, 10);
+
+    if (isNaN(parsedInt)) {
+        return null;
+    }
+
+    if (isNaN(Number(value))) {
+        return null;
+    }
+
+    return parsedInt;
+};
+
+module.exports = model => {
 
   return (req, res, next) => {
 
       const {sort, order, limit, skip} = req.query;
-      const integerPattern = /\d+/;
       const options = {};
       let orderBy = DEFAULT_SORT;
       let direction = DEFAULT_ORDER;
       if (Object.keys(model.schema.paths).indexOf(sort) !== -1) {
           orderBy = sort;
       }
-      if (ascendingValues.indexOf(order) !== -1) {
-          direction = order;
+      if (ascendingValues.indexOf(('' + order).toLowerCase()) !== -1) {
+          direction = 1;
       }
       options.sort = {
           [orderBy]: direction,
       };
-      if (integerPattern.test(limit)) {
-          options.limit = parseInt(limit, 10);
+
+      if (limit) {
+          const validLimitInt = getValidInt(limit);
+          if (validLimitInt && validLimitInt > 0) {
+              options.limit = validLimitInt;
+          }
       }
-      if (integerPattern.test(skip)) {
-          options.skip = parseInt(skip, 10);
+
+      if (skip) {
+          const validSkipInt = getValidInt(skip);
+          if (validSkipInt) {
+              options.skip = validSkipInt;
+          }
       }
+
       req.query.validQueryOptions = Object.assign({}, defaultOptions, options);
       next();
-  }
+  };
 };
