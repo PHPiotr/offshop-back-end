@@ -90,7 +90,11 @@ app.use(cors({
 }));
 app.locals.db = db;
 app.all('/admin/*', jwtCheck());
-app.use('/authorize', authorize);
+app.use('/authorize', authorize({
+    axios,
+    router: express.Router(),
+    url: `${process.env.PAYU_HOST}/pl/standard/user/oauth/authorize`,
+}));
 app.use('/orders', orders({
     io,
     axios,
