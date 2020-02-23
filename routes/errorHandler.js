@@ -1,4 +1,4 @@
-module.exports = (err, req, res, next) => {
+module.exports = isDevEnv => (err, req, res, next) => {
     if (!err) {
         return next();
     }
@@ -31,7 +31,7 @@ module.exports = (err, req, res, next) => {
         status: statusCode,
     };
 
-    if (process.env.NODE_ENV === 'development') {
+    if (isDevEnv) {
         payload.error = err;
     }
 

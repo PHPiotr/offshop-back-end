@@ -5,7 +5,7 @@ const chai = require('chai');
 const chaiHttp = require('chai-http');
 const deliveryMethods = require('../../routes/deliveryMethods');
 const queryOptionsCheck = require('../../middleware/queryOptionsCheck');
-const errorHandler = require('../../routes/errorHandler');
+const errorHandler = require('../../routes/errorHandler')(false);
 
 chai.use(chaiHttp);
 chai.should();
@@ -58,7 +58,6 @@ describe('deliveryMethods', () => {
         try {
             const res = await chai.request(app).get('/delivery-methods');
             res.should.have.status(500);
-            res.body.message.should.be.eql('Foo');
         } catch (e) {
             throw e;
         }
@@ -127,7 +126,6 @@ describe('deliveryMethods', () => {
         try {
             const res = await chai.request(app).get('/delivery-methods/foo');
             res.should.have.status(500);
-            res.body.message.should.be.eql('Foo');
         } catch (e) {
             throw e;
         }
