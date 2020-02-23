@@ -77,6 +77,7 @@ describe('payMethods', () => {
             router: express.Router(),
             url: 'https://pay-methods.api.com/foo',
         }));
+        app.use(errorHandler);
         try {
             const res = await chai.request(app).get('/pay-methods');
             res.should.have.status(500);

@@ -2,7 +2,7 @@ const express = require('express');
 const chai = require('chai');
 const chaiHttp = require('chai-http');
 const authorize = require('../../routes/authorize');
-const accessTokenCheck = require('../../middleware/accessTokenCheck');
+const errorHandler = require('../../routes/errorHandler')(false);
 
 chai.use(chaiHttp);
 chai.should();
@@ -27,6 +27,7 @@ describe('authorize', () => {
                     router: express.Router(),
                     url: 'https://authorize.api.com/user/oauth/authorize',
                 }));
+                app.use(errorHandler);
                 try {
                     const res = await chai.request(app).post('/authorize').send({client_id, client_secret});
                     res.should.have.status(status);
