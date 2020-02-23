@@ -6,7 +6,7 @@ const chai = require('chai');
 const chaiHttp = require('chai-http');
 const products = require('../../routes/products');
 const queryOptionsCheck = require('../../middleware/queryOptionsCheck');
-const errorHandler = require('../../routes/errorHandler');
+const errorHandler = require('../../routes/errorHandler')(false);
 
 chai.use(chaiHttp);
 chai.should();
@@ -27,8 +27,8 @@ describe('products', () => {
             [2, 1, 'foo', 'bar', 2, 1, -1, 'updatedAt'],
             ['foo', 'bar', 'baz', 'name', null, 0, -1, 'name'],
             ['foo', null, null, null, null, 0, -1, 'updatedAt'],
-            [console.log(1), undefined, NaN, null, null, 0, -1, 'updatedAt'],
-            ['console.log(1)', eval('console.log(1)'), NaN, null, null, 0, -1, 'updatedAt'],
+            ['console.log(1)', undefined, NaN, null, null, 0, -1, 'updatedAt'],
+            ['console.log(1)', "eval('console.log(1)')", NaN, null, null, 0, -1, 'updatedAt'],
             [{}, [], NaN, undefined, null, 0, -1, 'updatedAt'],
             ['2bar', '1foo', NaN, undefined, null, 0, -1, 'updatedAt'],
         ].forEach(([limit, skip, order, sort, expectedLimit, expectedSkip, expectedOrder, expectedSort]) => {
@@ -86,7 +86,6 @@ describe('products', () => {
         try {
             const res = await chai.request(app).get('/products');
             res.should.have.status(500);
-            res.body.message.should.be.eql('Foo');
         } catch (e) {
             throw e;
         }
@@ -158,7 +157,6 @@ describe('products', () => {
         try {
             const res = await chai.request(app).get('/products/foo');
             res.should.have.status(500);
-            res.body.message.should.be.eql('Foo');
         } catch (e) {
             throw e;
         }

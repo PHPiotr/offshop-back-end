@@ -1,7 +1,7 @@
-if (process.env.NODE_ENV !== 'production') {
-    const dotenv = require('dotenv');
-    dotenv.config();
-}
+const isDevEnv = process.env.NODE_ENV === 'development';
+
+const dotenv = require('dotenv');
+dotenv.config();
 
 const express = require('express');
 const http = require('http');
@@ -124,7 +124,12 @@ app.use('/delivery-methods', deliveryMethods({
     router: express.Router(),
     queryOptionsCheck,
 }));
-app.use('/pay-methods', payMethods({router: express.Router()}));
+app.use('/pay-methods', payMethods({
+    accessTokenCheck,
+    axios,
+    router: express.Router(),
+    url: `${process.env.PAYU_API}/paymethods`,
+}));
 
 // admin handlers
 app.use('/admin/orders', ordersManagement({
@@ -165,7 +170,7 @@ app.all('*', (req, res, next) => {
     next(Error('Not found'));
 });
 
-app.use(errorHandler);
+app.use(errorHandler(isDevEnv));
 
 server.listen(PORT, () => {
     console.log('server running at ' + PORT)

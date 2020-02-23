@@ -1,13 +1,9 @@
-const axios = require('axios');
-const accessTokenCheck = require('../middleware/accessTokenCheck');
-module.exports = (config) => {
-
-    const {router} = config;
+module.exports = ({accessTokenCheck, axios, router, url}) => {
 
     router.get('/', accessTokenCheck, async (req, res, next) => {
         try {
             const {data: {cardTokens, payByLinks, pexTokens}} = await axios({
-                url: `${process.env.PAYU_API}/paymethods`,
+                url,
                 method: 'get',
                 headers: {
                     'Content-Type': 'application/json',
@@ -15,7 +11,6 @@ module.exports = (config) => {
                     'Authorization': req.headers.authorization,
                 },
                 maxRedirects: 0,
-                validateStatus: status => status === 200,
             });
 
             res.json({
