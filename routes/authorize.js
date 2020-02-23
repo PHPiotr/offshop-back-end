@@ -1,45 +1,36 @@
-const express = require('express');
-const router = express.Router();
-const request = require('request');
+module.exports = ({axios, router, url}) => {
 
-// OAuth Authorization
-router.post('/', (req, res, next) => {
+    router.post('/', async (req, res, next) => {
 
-    const {client_id, client_secret} = req.body;
-    if (typeof client_id !== 'string' || !client_id.trim()) {
-        res.status(403);
-        return next(Error('Invalid client id'));
-    }
-    if (typeof client_secret !== 'string') {
-        res.status(403);
-        return next(Error('Invalid client secret'));
-    }
-    const clientId = parseInt(client_id, 10);
-    const clientSecret = client_secret.toString().trim();
-
-    const options = {
-        url: `${process.env.PAYU_HOST}/pl/standard/user/oauth/authorize`,
-        body: `grant_type=client_credentials&client_id=${clientId}&client_secret=${clientSecret}`,
-        headers: {
-            'Content-Type': 'application/x-www-form-urlencoded',
+        const {client_id, client_secret} = req.body;
+        if (typeof client_id !== 'string' || !client_id.trim()) {
+            res.status(401);
+            return next(Error('Invalid client id'));
         }
-    };
-
-    function callback(err, response, body) {
-        if (err) {
-            return next(err);
+        if (typeof client_secret !== 'string') {
+            res.status(401);
+            return next(Error('Invalid client secret'));
         }
-        const {statusCode, statusMessage} = response;
-        switch (response.statusCode) {
-            case 503:
-                res.status(statusCode);
-                return next(Error(statusMessage));
-            default:
-                res.json(JSON.parse(body));
+        const clientId = parseInt(client_id, 10);
+        const clientSecret = client_secret.toString().trim();
+
+        try {
+            const {data} = await axios({
+                url,
+                data: `grant_type=client_credentials&client_id=${clientId}&client_secret=${clientSecret}`,
+                method: 'post',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                    'Cache-Control': 'no-cache',
+                },
+                maxRedirects: 0,
+            });
+            res.json(data);
+        } catch (e) {
+            next(e);
         }
-    }
+    });
 
-    request.post(options, callback);
-});
+    return router;
 
-module.exports = router;
+};
