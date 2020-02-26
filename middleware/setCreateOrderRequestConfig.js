@@ -1,10 +1,10 @@
-module.exports = (req, res, next) => {
+module.exports = ({createOrderUrl, notifyUrl, getObjectId}) => (req, res, next) => {
 
-    const extOrderId = req.app.locals.db.Types.ObjectId().toString();
+    const extOrderId = getObjectId();
     const customerIp = req.ip;
 
     req.createOrderRequestConfig = {
-        url: `${process.env.PAYU_API}/orders`,
+        url: createOrderUrl,
         method: 'post',
         headers: {
             'Content-Type': 'application/json',
@@ -13,12 +13,12 @@ module.exports = (req, res, next) => {
         data: {
             extOrderId,
             payMethods: req.body.payMethods,
-            notifyUrl: req.body.notifyUrl,
+            notifyUrl,
             continueUrl: req.body.continueUrl,
             customerIp,
             merchantPosId: req.body.merchantPosId,
             description: `${req.body.description} ${extOrderId}`,
-            currencyCode: req.body.currencyCode,
+            currencyCode: `${req.body.currencyCode}`,
             totalAmount: `${req.body.totalAmount}`,
             buyer: req.body.buyer,
             settings: req.body.settings,

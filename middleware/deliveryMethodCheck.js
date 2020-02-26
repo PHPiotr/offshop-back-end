@@ -5,35 +5,28 @@ const deliveryMethodCheck = DeliveryMethodModel => async (req, res, next) => {
             res.status(400);
             return next(new Error('Missing delivery method'));
         }
-        DeliveryMethodModel.findById(deliveryMethod.id, function(err, doc) {
-            if (!doc) {
-                res.status(400);
-                return next(new Error('Delivery method does not exist'));
-            }
-            if (!doc.active) {
-                res.status(400);
-                return next(new Error('Delivery method is nt active'));
-            }
-            if (Number(deliveryMethod.unitPrice) !== doc.unitPrice) {
-                res.status(400);
-                return next(new Error('Wrong delivery method unit price'));
-            }
-            if (deliveryMethod.name !== doc.name) {
-                res.status(400);
-                return next(new Error('Wrong delivery method name'));
-            }
-            if (deliveryMethod.slug !== doc.slug) {
-                res.status(400);
-                return next(new Error('Wrong delivery method slug'));
-            }
-            const expectedTotal = Math.round(doc.unitPrice * Number(req.body.totalWeight) / 100);
-            const receivedTotal = Number(req.body.totalAmount) - Number(req.body.totalWithoutDelivery);
-            if (receivedTotal > 0 && expectedTotal !== receivedTotal) {
-                res.status(400);
-                return next(new Error('Wrong delivery cost'));
-            }
-            return next(err);
-        });
+        const doc = await DeliveryMethodModel.findById(deliveryMethod.id);
+        if (!doc) {
+            res.status(400);
+            return next(new Error('Delivery method does not exist'));
+        }
+        if (!doc.active) {
+            res.status(400);
+            return next(new Error('Delivery method is nt active'));
+        }
+        if (Number(deliveryMethod.unitPrice) !== doc.unitPrice) {
+            res.status(400);
+            return next(new Error('Wrong delivery method unit price'));
+        }
+        if (deliveryMethod.name !== doc.name) {
+            res.status(400);
+            return next(new Error('Wrong delivery method name'));
+        }
+        if (deliveryMethod.slug !== doc.slug) {
+            res.status(400);
+            return next(new Error('Wrong delivery method slug'));
+        }
+        next();
     } catch (err) {
         res.status(400);
         return next(err);

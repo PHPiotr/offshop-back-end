@@ -1,16 +1,27 @@
 const getOrderSchema = ({Schema, possibleOrderStatuses}) => {
     const ObjectId = Schema.Types.ObjectId;
     const OrderSchema = new Schema({
-        currencyCode: String,
-        customerIp: String,
-        description: String,
+        currencyCode: {
+            type: String,
+            required: true,
+        },
+        customerIp: {
+            type: String,
+            required: true,
+        },
+        description: {
+            type: String,
+            required: true,
+        },
         extOrderId: {
             type: ObjectId,
             required: true,
             unique: true,
         },
-        merchantPosId: String,
-        notifyUrl: String,
+        merchantPosId: {
+            type: String,
+            required: true,
+        },
         orderId: {
             type: String,
             required: true,
@@ -26,7 +37,10 @@ const getOrderSchema = ({Schema, possibleOrderStatuses}) => {
             type: String,
             default: '',
         },
-        totalAmount: String,
+        totalAmount: {
+            type: String,
+            required: true,
+        },
         totalWithoutDelivery: Number,
         totalWeight: Number,
         buyer: Object,

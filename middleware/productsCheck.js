@@ -5,7 +5,10 @@ const productsCheck = ProductModel => async (req, res, next) => {
         if (!productsIdsLength) {
             throw new Error('Empty products ids');
         }
-        let totalWeight = Number(req.body.totalWeight) || 0;
+        if (Number.isNaN(parseInt(req.body.totalWeight, 0))) {
+            throw new Error('Param totalWeight is not a number');
+        }
+        let totalWeight = Number(req.body.totalWeight);
         let totalWithoutDelivery = 0;
 
         for (let i = 0; i < productsIdsLength; i++) {
