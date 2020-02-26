@@ -15,7 +15,7 @@ const axios = require('axios');
 const {model, Schema} = require('mongoose');
 const uniqueValidator = require('mongoose-unique-validator');
 const slugify = require('slugify');
-const {possibleOrderStatuses} = require('./utils/getPossibleOrderStatuses');
+const {possibleOrderStatuses, statusesDescriptions} = require('./utils/getPossibleOrderStatuses');
 
 const DeliveryMethodSchema = require('./schemas/DeliveryMethodSchema')({Schema, slugify});
 const OrderSchema = require('./schemas/OrderSchema')({Schema, possibleOrderStatuses});
@@ -43,11 +43,14 @@ const productsManagement = require('./routes/admin/products');
 const jwtCheck = require('./middleware/jwtCheck');
 const queryOptionsCheck = require('./middleware/queryOptionsCheck');
 const accessTokenCheck = require('./middleware/accessTokenCheck');
-const orderCreateParamsCheck = require('./middleware/orderCreateParamsCheck');
 const verifyNotificationSignature = require('./middleware/verifyNotificationSignature');
 const productsCheckMiddleware = require('./middleware/productsCheck');
 const deliveryMethodCheckMiddleware = require('./middleware/deliveryMethodCheck');
-const setCreateOrderRequestConfig = require('./middleware/setCreateOrderRequestConfig');
+const setCreateOrderRequestConfig = require('./middleware/setCreateOrderRequestConfig')({
+    createOrderUrl: `${process.env.PAYU_API}/orders`,
+    notifyUrl: `${process.env.API_URL}/notify`,
+    getObjectId: () => db.Types.ObjectId().toString(),
+});
 
 // utils
 const resizeFile = require('./utils/resizeFile');
@@ -57,7 +60,6 @@ const readFile = require('./utils/readFile');
 const s3UploadFile = require('./utils/s3UploadFile');
 const s3DeleteFiles = require('./utils/s3DeleteFiles');
 const sendMail = require('./utils/sendMail');
-const {statusesDescriptions} = require('./utils/getPossibleOrderStatuses');
 
 const PORT = process.env.PORT || 9000;
 const apiUrl = process.env.API_URL;
@@ -104,7 +106,6 @@ app.use('/orders', orders({
     OrderSchema,
     ProductSchema,
     accessTokenCheck,
-    orderCreateParamsCheck,
     verifyNotificationSignature,
     productsCheckMiddleware,
     deliveryMethodCheckMiddleware,

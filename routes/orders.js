@@ -8,7 +8,6 @@ module.exports = (config) => {
         ProductSchema,
         DeliveryMethodSchema,
         accessTokenCheck,
-        orderCreateParamsCheck,
         verifyNotificationSignature,
         productsCheckMiddleware,
         deliveryMethodCheckMiddleware,
@@ -121,7 +120,6 @@ module.exports = (config) => {
     // OrderCreateRequest
     router.post('/',
         accessTokenCheck,
-        orderCreateParamsCheck,
         productsCheck,
         deliveryMethodCheck,
         setCreateOrderRequestConfig,
