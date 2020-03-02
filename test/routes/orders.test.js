@@ -30,6 +30,226 @@ chai.should();
 
 describe('orders', () => {
 
+    const fakeCrypto = {
+        createHash: () => ({
+            update: () => ({
+                digest: () => 'fizz-buzz',
+            }),
+        }),
+    };
+
+    describe('notify', () => {
+
+        [
+            [
+                'should work if local order found and status was not changed',
+                {order: {status: 'foo'}, orderId: 'foo', localReceiptDateTime: (new Date()).toISOString(), properties: [], refund: null},
+                {orderId: 'foo', status: 'foo', productsIds: ['foo'], products: [{id: 'foo', quantity: 1}], save: () => null},
+                [{stock: 20, id: 'foo', save: () => null}],
+                fakeCrypto,
+                () => 'fizz-',
+                'buzz',
+                'Openpayu-Signature',
+                'algorithm=foo;signature=fizz-buzz',
+                200,
+            ],
+            [
+                'should work if local order found and status was changed but it is not completed yet and no email data',
+                {order: {status: 'foo'}, orderId: 'foo', localReceiptDateTime: (new Date()).toISOString(), properties: [], refund: null},
+                {orderId: 'foo', status: 'bar', productsIds: ['foo'], products: [{id: 'foo', quantity: 1}], save: () => null},
+                [{stock: 20, id: 'foo', save: () => null}],
+                fakeCrypto,
+                () => 'fizz-',
+                'buzz',
+                'Openpayu-Signature',
+                'algorithm=foo;signature=fizz-buzz',
+                200,
+            ],
+            [
+                'should work if local order found and status was changed and is completed but no email data and still items in stock',
+                {order: {status: 'COMPLETED'}, orderId: 'foo', localReceiptDateTime: (new Date()).toISOString(), properties: [], refund: null},
+                {orderId: 'foo', status: 'bar', productsIds: ['foo'], products: [{id: 'foo', quantity: 1}], save: () => null},
+                [{stock: 20, id: 'foo', save: () => null}],
+                fakeCrypto,
+                () => 'fizz-',
+                'buzz',
+                'Openpayu-Signature',
+                'algorithm=foo;signature=fizz-buzz',
+                200,
+            ],
+            [
+                'should work if local order found and status was changed and is completed but no email data and no more items in stock',
+                {order: {status: 'COMPLETED'}, orderId: 'foo', localReceiptDateTime: (new Date()).toISOString(), properties: [], refund: null},
+                {orderId: 'foo', status: 'bar', productsIds: ['foo'], products: [{id: 'foo', quantity: 1}], save: () => null},
+                [{stock: 1, id: 'foo', save: () => null}],
+                fakeCrypto,
+                () => 'fizz-',
+                'buzz',
+                'Openpayu-Signature',
+                'algorithm=foo;signature=fizz-buzz',
+                200,
+            ],
+            [
+                'should work if local order found and status was changed and is completed and no full email data (missing first nd last name)',
+                {order: {status: 'COMPLETED'}, orderId: 'foo', localReceiptDateTime: (new Date()).toISOString(), properties: [], refund: null},
+                {buyer: {email: 'foo@example.com'}, orderId: 'foo', status: 'bar', productsIds: ['foo'], products: [{id: 'foo', quantity: 1}], save: () => null},
+                [{stock: 1, id: 'foo', save: () => null}],
+                fakeCrypto,
+                () => 'fizz-',
+                'buzz',
+                'Openpayu-Signature',
+                'algorithm=foo;signature=fizz-buzz',
+                200,
+            ],
+            [
+                'should work if local order found and status was changed and is completed and no full email data (missing last name)',
+                {order: {status: 'COMPLETED'}, orderId: 'foo', localReceiptDateTime: (new Date()).toISOString(), properties: [], refund: null},
+                {buyer: {email: 'foo@example.com', firstName: 'Foo'}, orderId: 'foo', status: 'bar', productsIds: ['foo'], products: [{id: 'foo', quantity: 1}], save: () => null},
+                [{stock: 1, id: 'foo', save: () => null}],
+                fakeCrypto,
+                () => 'fizz-',
+                'buzz',
+                'Openpayu-Signature',
+                'algorithm=foo;signature=fizz-buzz',
+                200,
+            ],
+            [
+                'should send email if full buyer data provided',
+                {order: {status: 'COMPLETED'}, orderId: 'foo', localReceiptDateTime: (new Date()).toISOString(), properties: [], refund: null},
+                {buyer: {email: 'foo@example.com', firstName: 'Foo', lastName: 'Bar'}, orderId: 'foo', status: 'bar', productsIds: ['foo'], products: [{id: 'foo', quantity: 1}], save: () => null},
+                [{stock: 1, id: 'foo', save: () => null}],
+                fakeCrypto,
+                () => 'fizz-',
+                'buzz',
+                'Openpayu-Signature',
+                'algorithm=foo;signature=fizz-buzz',
+                200,
+            ],
+            [
+                'should work if no local order found',
+                {order: {status: 'COMPLETED'}, orderId: 'foo', localReceiptDateTime: (new Date()).toISOString(), properties: [], refund: null},
+                null,
+                [{stock: 20, id: 'foo', save: () => null}],
+                fakeCrypto,
+                () => 'fizz-',
+                'buzz',
+                'Openpayu-Signature',
+                'algorithm=foo;signature=fizz-buzz',
+                200,
+            ],
+            [
+                'should work if no local order found',
+                {order: {status: 'COMPLETED'}, orderId: 'foo', localReceiptDateTime: (new Date()).toISOString(), properties: [], refund: null},
+                null,
+                [{stock: 20, id: 'foo', save: () => null}],
+                fakeCrypto,
+                () => 'fizz-',
+                'buzz',
+                'Openpayu-Signature',
+                'algorithm=foo;signature=fizz-buzz',
+                200,
+            ],
+            [
+                'should catch error',
+                {order: {status: 'COMPLETED'}, orderId: 'foo', localReceiptDateTime: (new Date()).toISOString(), properties: [], refund: null},
+                'error',
+                [{stock: 20, id: 'foo', save: () => null}],
+                fakeCrypto,
+                () => 'fizz-',
+                'buzz',
+                'Openpayu-Signature',
+                'algorithm=foo;signature=fizz-buzz',
+                500,
+            ],
+            [
+                'should catch if notification signature mismatched',
+                {order: {status: 'COMPLETED'}, orderId: 'foo', localReceiptDateTime: (new Date()).toISOString(), properties: [], refund: null},
+                'error',
+                [{stock: 20, id: 'foo', save: () => null}],
+                fakeCrypto,
+                () => 'fizz-',
+                'buzz',
+                'Openpayu-Signature',
+                'algorithm=foo;signature=mismatched',
+                401,
+            ],
+            [
+                'should work if refund',
+                {refund: {foo: 'bar'}, orderId: 'foo'},
+                {buyer: {email: 'foo@example.com', firstName: 'Foo', lastName: 'Bar'}, orderId: 'foo', status: 'bar', productsIds: ['foo'], products: [{id: 'foo', quantity: 1}], save: () => null},
+                [{stock: 20, id: 'foo', save: () => null}],
+                fakeCrypto,
+                () => 'fizz-',
+                'buzz',
+                'Openpayu-Signature',
+                'algorithm=foo;signature=fizz-buzz',
+                200,
+            ],
+            [
+                'should work if refund already set in local db',
+                {refund: {status: 'foo'}, orderId: 'foo'},
+                {refund: {status: 'foo'}, buyer: {email: 'foo@example.com', firstName: 'Foo', lastName: 'Bar'}, orderId: 'foo', status: 'bar', productsIds: ['foo'], products: [{id: 'foo', quantity: 1}], save: () => null},
+                [{stock: 20, id: 'foo', save: () => null}],
+                fakeCrypto,
+                () => 'fizz-',
+                'buzz',
+                'Openpayu-Signature',
+                'algorithm=foo;signature=fizz-buzz',
+                200,
+            ],
+            [
+                'should work if refund but no buyer in local db',
+                {refund: {status: 'foo'}, orderId: 'foo'},
+                {refund: {status: 'bar'}, orderId: 'foo', status: 'bar', productsIds: ['foo'], products: [{id: 'foo', quantity: 1}], save: () => null},
+                [{stock: 20, id: 'foo', save: () => null}],
+                fakeCrypto,
+                () => 'fizz-',
+                'buzz',
+                'Openpayu-Signature',
+                'algorithm=foo;signature=fizz-buzz',
+                200,
+            ],
+        ].forEach(([should, data, foundProduct, foundProducts, crypto, stringify, secondKey, setKey, setVal, status]) => {
+            it(should, async () => {
+                const app = express();
+                app.use(express.json());
+                app.use('/orders', orders({
+                    io: {
+                        to: () => ({emit: () => null}),
+                        emit: () => this,
+                    },
+                    router: express.Router(),
+                    model: name => ({
+                        findOne: () => ({exec: () => foundProduct}),
+                        find: () => (foundProducts),
+                    }),
+                    OrderSchema,
+                    ProductSchema,
+                    DeliveryMethodSchema,
+                    accessTokenCheck,
+                    verifyNotificationSignature: verifyNotificationSignature({crypto, secondKey, stringify}),
+                    productsCheckMiddleware,
+                    deliveryMethodCheckMiddleware,
+                    setCreateOrderRequestConfig,
+                    sendMail: sendMail({
+                        transport: {},
+                        Email: (class {
+                            send() {};
+                        })
+                    }),
+                    emailFrom: 'foo@example.com',
+                    axios: () => null,
+                    statusesDescriptions,
+                    productPath: 'https://some-api.com/products',
+                }));
+                app.use(errorHandler);
+                const res = await chai.request(app).post('/orders/notify').set(setKey, setVal).send(data);
+                res.should.have.status(status);
+            });
+        });
+
+    });
+
     describe('create', () => {
 
         const defaultData = {
