@@ -35,7 +35,7 @@ module.exports = (config) => {
             try {
                 localOrder = await OrderModel.findOne({orderId: {$eq: orderId}}).exec();
                 if (localOrder.refund && localOrder.refund.status === refund.status) {
-                    return res.sendStatus(200);
+                    return;
                 }
                 const mergedRefund = Object.assign({},(localOrder.refund || {}), refund);
                 Object.assign(localOrder, {refund: mergedRefund});
@@ -43,19 +43,9 @@ module.exports = (config) => {
                 io.to('admin').emit('adminRefund', {order: localOrder});
                 const {email, firstName, lastName} = localOrder.buyer || {};
                 if (!email || !firstName || !lastName) {
-                    return res.sendStatus(200);
+                    return;
                 }
-                try {
-                    await sendMail(
-                        'refund',
-                        Object.assign(localOrder, {productPath}),
-                        emailFrom,
-                        `${firstName} ${lastName} <${email}>`);
-                } finally {
-                    return res.sendStatus(200);
-                }
-            } catch (e) {
-                console.log('Error when updating refund in local db', e);
+                await sendMail('refund', Object.assign(localOrder, {productPath}), emailFrom, `${firstName} ${lastName} <${email}>`);
             } finally {
                 return res.sendStatus(200);
             }
@@ -64,8 +54,6 @@ module.exports = (config) => {
         try {
             try {
                 localOrder = await OrderModel.findOne({orderId: {$eq: order.orderId}}).exec();
-            } catch (e) {
-                console.log('Error when finding order in local db', e);
             } finally {
                 if (!localOrder) {
                     return res.sendStatus(200);
@@ -87,7 +75,7 @@ module.exports = (config) => {
                 const productsById = {};
                 productsList.forEach(async (doc, index) => {
                     const newQuantity = doc.stock - products[index].quantity;
-                    doc.stock = newQuantity < 0 ? 0 : newQuantity;
+                    doc.stock = newQuantity <= 0 ? 0 : newQuantity;
                     productsById[doc.id] = doc;
                     return await doc.save();
                 });

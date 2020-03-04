@@ -11,6 +11,7 @@ const helmet = require('helmet');
 const fileUpload = require('express-fileupload');
 const aws = require('aws-sdk');
 const axios = require('axios');
+const crypto = require('crypto');
 
 const {model, Schema} = require('mongoose');
 const uniqueValidator = require('mongoose-unique-validator');
@@ -43,7 +44,11 @@ const productsManagement = require('./routes/admin/products');
 const jwtCheck = require('./middleware/jwtCheck');
 const queryOptionsCheck = require('./middleware/queryOptionsCheck');
 const accessTokenCheck = require('./middleware/accessTokenCheck');
-const verifyNotificationSignature = require('./middleware/verifyNotificationSignature');
+const verifyNotificationSignature = require('./middleware/verifyNotificationSignature')({
+    crypto,
+    secondKey: process.env.SECOND_KEY,
+    stringify: JSON.stringify,
+});
 const productsCheckMiddleware = require('./middleware/productsCheck');
 const deliveryMethodCheckMiddleware = require('./middleware/deliveryMethodCheck');
 const setCreateOrderRequestConfig = require('./middleware/setCreateOrderRequestConfig')({
@@ -59,7 +64,18 @@ const renameFile = require('./utils/renameFile');
 const readFile = require('./utils/readFile');
 const s3UploadFile = require('./utils/s3UploadFile');
 const s3DeleteFiles = require('./utils/s3DeleteFiles');
-const sendMail = require('./utils/sendMail');
+const nodemailer = require('nodemailer');
+const sendMail = require('./utils/sendMail')({
+    transport: nodemailer.createTransport({
+        host: process.env.EMAIL_ACCOUNT_SMTP_HOST,
+        port: process.env.EMAIL_ACCOUNT_SMTP_PORT,
+        auth: {
+            user: process.env.EMAIL_ACCOUNT_USER,
+            pass: process.env.EMAIL_ACCOUNT_PASS,
+        }
+    }),
+    Email: require('email-templates'),
+});
 
 const PORT = process.env.PORT || 9000;
 const apiUrl = process.env.API_URL;
