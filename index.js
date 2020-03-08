@@ -12,6 +12,7 @@ const fileUpload = require('express-fileupload');
 const aws = require('aws-sdk');
 const axios = require('axios');
 const crypto = require('crypto');
+const jwt = require('express-jwt');
 
 const {model, Schema} = require('mongoose');
 const uniqueValidator = require('mongoose-unique-validator');
@@ -41,7 +42,6 @@ const ordersManagement = require('./routes/admin/orders');
 const productsManagement = require('./routes/admin/products');
 
 // middleware
-const jwtCheck = require('./middleware/jwtCheck');
 const queryOptionsCheck = require('./middleware/queryOptionsCheck');
 const accessTokenCheck = require('./middleware/accessTokenCheck');
 const verifyNotificationSignature = require('./middleware/verifyNotificationSignature')({
@@ -107,7 +107,11 @@ app.use(cors({
     credentials: true,
 }));
 app.locals.db = db;
-app.all('/admin/*', jwtCheck());
+app.all('/admin/*', jwt({
+    secret: process.env.JWT_SECRET,
+    audience: process.env.JWT_AUDIENCE,
+    issuer: process.env.JWT_ISSUER,
+}));
 app.use('/authorize', authorize({
     axios,
     router: express.Router(),
@@ -139,7 +143,6 @@ app.use('/products', products({
 }));
 app.use('/delivery-methods', deliveryMethods({
     io,
-    jwtCheck,
     model,
     DeliveryMethodSchema,
     router: express.Router(),
