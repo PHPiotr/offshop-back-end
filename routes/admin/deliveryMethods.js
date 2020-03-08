@@ -44,7 +44,7 @@ module.exports = (config) => {
             res.set('Location', `${apiUrl}/admin/delivery-methods/${deliveryMethod.id}`);
             res.status(201).json(deliveryMethod);
         } catch (e) {
-            return next(e);
+            next(e);
         }
     });
 
