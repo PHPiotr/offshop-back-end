@@ -45,7 +45,6 @@ module.exports = (config) => {
                     'Authorization': `Bearer ${req.body.payuToken}`,
                 },
                 maxRedirects: 0,
-                validateStatus: status => status === 200,
             });
             if (cancelOrderResponse.data.error) {
                 return next(new Error(cancelOrderResponse.data.error));
@@ -102,7 +101,6 @@ module.exports = (config) => {
                     refund: req.body.refund,
                 },
                 maxRedirects: 0,
-                validateStatus: status => status === 200,
             });
 
             try {
