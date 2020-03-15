@@ -1,2 +1,1 @@
-const sharp = require('sharp');
-module.exports = (buffer, dimensions, toFile) => sharp(buffer).resize(dimensions).toFile(toFile);
+module.exports = sharp => (buffer, dimensions, toFile) => sharp(buffer).resize(dimensions).toFile(toFile);

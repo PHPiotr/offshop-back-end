@@ -9,6 +9,11 @@ const fileUpload = require('express-fileupload');
 const products = require('../../../routes/admin/products');
 const queryOptionsCheck = require('../../../middleware/queryOptionsCheck');
 const errorHandler = require('../../../routes/errorHandler')(false);
+const removeFile = require('../../../utils/removeFile');
+const resizeFile = require('../../../utils/resizeFile');
+const readFile = require('../../../utils/readFile');
+const s3DeleteFiles = require('../../../utils/s3DeleteFiles');
+const s3UploadFile = require('../../../utils/s3UploadFile');
 
 chai.use(chaiHttp);
 chai.should();
@@ -137,10 +142,10 @@ describe('admin products', () => {
             router: express.Router(),
             queryOptionsCheck,
             fileUtils: {
-                resizeFile: () => ({}),
-                readFile: () => ({}),
-                s3UploadFile: () => ({}),
-                removeFile: () => ({}),
+                resizeFile: resizeFile(() => ({resize: () => ({toFile: () => {}})})),
+                readFile: readFile({readFile: () => 'foo'}),
+                s3UploadFile: s3UploadFile({upload: () => ({promise: () => ({ETag: 'foo', Key: 'bar'})})}),
+                removeFile: removeFile({unlink: () => 'bar'}),
             },
         }));
         const res = await chai.request(app)
@@ -216,18 +221,52 @@ describe('admin products', () => {
             router: express.Router(),
             queryOptionsCheck,
             fileUtils: {
-                resizeFile: () => ({}),
-                readFile: () => ({}),
-                s3UploadFile: () => ({
-                    Key: 'foo', ETag: 'bar',
-                }),
-                removeFile: () => ({}),
+                resizeFile: resizeFile(() => ({resize: () => ({toFile: () => {}})})),
+                readFile: readFile({readFile: () => 'foo'}),
+                s3UploadFile: s3UploadFile({upload: () => ({promise: () => ({ETag: 'foo', Key: 'bar'})})}),
+                removeFile: removeFile({unlink: () => 'bar'}),
             },
         }));
         const res = await chai.request(app).put('/admin/products/fizz')
             .attach("img", readFileSync("./test/routes/admin/file.test"), "file.test");;
         res.should.have.status(200);
         res.get('Location').should.be.eql('https://example.com/admin/products/fizz');
+    });
+
+    it('should fail creating product if uploading image to s3 fails', async () => {
+        const app = express();
+        app.use(express.json());
+        app.use(fileUpload({
+            safeFileNames: true,
+        }));
+        app.use('/admin/products', products({
+            model: (name, schema) => ({
+                findById: () => ({
+                    exec: async () => ({
+                        id: 'fizz',
+                        active: true,
+                        save: () => {},
+                    }),
+                }),
+                schema,
+            }),
+            apiUrl: 'https://example.com',
+            io: {to: () => ({emit: () => null})},
+            ProductSchema,
+            router: express.Router(),
+            queryOptionsCheck,
+            fileUtils: {
+                resizeFile: resizeFile(() => ({resize: () => ({toFile: () => {}})})),
+                readFile: readFile({readFile: () => 'foo'}),
+                s3UploadFile: s3UploadFile({upload: () => {throw new Error();}}),
+                s3DeleteFiles: s3DeleteFiles({deleteObjects: () => ({promise: () => {}})}),
+                removeFile: removeFile({unlink: () => 'bar'}),
+            },
+        }));
+        app.use(errorHandler);
+        const res = await chai.request(app).put('/admin/products/fizz')
+            .attach("img", readFileSync("./test/routes/admin/file.test"), "file.test");;
+        res.should.have.status(500);
     });
 
     it('should fail editing product', async () => {
@@ -287,7 +326,7 @@ describe('admin products', () => {
             router: express.Router(),
             queryOptionsCheck,
             fileUtils: {
-                s3DeleteFiles: () => ({}),
+                s3DeleteFiles: s3DeleteFiles({deleteObjects: () => ({promise: () => {}})}),
             },
         }));
         const res = await chai.request(app).delete('/admin/products/fizz');
