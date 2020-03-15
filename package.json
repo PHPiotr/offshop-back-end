@@ -41,7 +41,6 @@
   "scripts": {
     "start": "node index",
     "dev": "nodemon index",
-    "dev:serve": "node scripts/serve.js",
     "test": "nyc --reporter=lcov mocha --recursive",
     "coverage": "cat ./coverage/lcov.info | ./node_modules/coveralls/bin/coveralls.js && rm -rf ./coverage"
   },

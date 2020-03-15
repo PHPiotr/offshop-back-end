@@ -58,12 +58,21 @@ const setCreateOrderRequestConfig = require('./middleware/setCreateOrderRequestC
 });
 
 // utils
-const resizeFile = require('./utils/resizeFile');
-const removeFile = require('./utils/removeFile');
-const renameFile = require('./utils/renameFile');
-const readFile = require('./utils/readFile');
-const s3UploadFile = require('./utils/s3UploadFile');
-const s3DeleteFiles = require('./utils/s3DeleteFiles');
+const sharp = require('sharp');
+const fs = require('fs').promises;
+const s3 = new aws.S3({
+    accessKeyId: process.env.AWS_ACCESS_KEY_ID,
+    secretAccessKey:process.env.AWS_SECRET_ACCESS_KEY,
+    region: process.env.AWS_REGION,
+    params: {
+        Bucket: process.env.S3_BUCKET,
+    },
+});
+const resizeFile = require('./utils/resizeFile')(sharp);
+const removeFile = require('./utils/removeFile')(fs);
+const readFile = require('./utils/readFile')(fs);
+const s3UploadFile = require('./utils/s3UploadFile')(s3);
+const s3DeleteFiles = require('./utils/s3DeleteFiles')(s3);
 const nodemailer = require('nodemailer');
 const sendMail = require('./utils/sendMail')({
     transport: nodemailer.createTransport({
@@ -85,15 +94,6 @@ const server = http.createServer(app);
 
 ioModule.initialize(server, {pingTimeout: 60000});
 const io = ioModule.io();
-
-const s3 = new aws.S3({
-    accessKeyId: process.env.AWS_ACCESS_KEY_ID,
-    secretAccessKey:process.env.AWS_SECRET_ACCESS_KEY,
-    region: process.env.AWS_REGION,
-    params: {
-        Bucket: process.env.S3_BUCKET,
-    },
-});
 
 app.use(express.static(path.join(__dirname, 'public')));
 app.use(express.json());
@@ -174,10 +174,9 @@ app.use('/admin/products', productsManagement({
     fileUtils: {
         resizeFile,
         removeFile,
-        renameFile,
         readFile,
-        s3UploadFile: s3UploadFile(s3),
-        s3DeleteFiles: s3DeleteFiles(s3),
+        s3UploadFile,
+        s3DeleteFiles,
     },
 }));
 app.use('/admin/delivery-methods', deliveryMethodsManagement({

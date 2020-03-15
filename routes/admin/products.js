@@ -13,7 +13,6 @@ module.exports = (config) => {
     const ProductModel = model('Product', ProductSchema);
 
     const processUpload = async (buffer, id) => {
-        let data = null;
         const avatarPath = `./public/images/products/${id}.avatar.jpg`;
         const cardPath = `./public/images/products/${id}.card.jpg`;
         const tilePath = `./public/images/products/${id}.tile.jpg`;
@@ -34,23 +33,22 @@ module.exports = (config) => {
                     fileUtils.s3UploadFile(cardBuffer, `${id}.card.jpg`),
                     fileUtils.s3UploadFile(tileBuffer, `${id}.tile.jpg`),
                 ]);
-                data = {
+                return {
                     avatar: `${avatar.Key}?${avatar.ETag.substring(1, avatar.ETag.length - 1)}`,
                     card: `${card.Key}?${card.ETag.substring(1, card.ETag.length - 1)}`,
                     tile: `${tile.Key}?${tile.ETag.substring(1, tile.ETag.length - 1)}`,
                 };
-                return data;
             } catch (e) {
                 await fileUtils.s3DeleteFiles([`${id}.avatar.jpg`, `${id}.card.jpg`, `${id}.tile.jpg`]);
+                throw e;
             }
-        } catch {
+        } catch (e) {
             await Promise.all([
                 fileUtils.removeFile(cardPath),
                 fileUtils.removeFile(tilePath),
                 fileUtils.removeFile(avatarPath),
             ]);
-        } finally {
-            return data;
+            throw e;
         }
     };
 
@@ -136,9 +134,7 @@ module.exports = (config) => {
             }
             const {active} = product;
             await ProductModel.deleteOne({ _id: product._id });
-            await Promise.all([
-                fileUtils.s3DeleteFiles([`${product.id}.tile.jpg`, `${product.id}.avatar.jpg`]),
-            ]);
+            await fileUtils.s3DeleteFiles([`${product.id}.tile.jpg`, `${product.id}.card.jpg`, `${product.id}.avatar.jpg`]);
             io.to('admin').emit('adminDeleteProduct', {product, wasActive: active});
             io.to('users').emit('deleteProduct', {product, wasActive: active});
             res.sendStatus(204);
