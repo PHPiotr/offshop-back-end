@@ -32,8 +32,6 @@ const DeliveryMethodSchema = require('./schemas/DeliveryMethodSchema')({Schema, 
 const OrderSchema = require('./schemas/OrderSchema')({Schema, possibleOrderStatuses});
 const ProductSchema = require('./schemas/ProductSchema')({Schema, uniqueValidator, slugify});
 
-const ioModule = require('./io');
-
 const app = express();
 
 // routes
@@ -100,8 +98,23 @@ const emailFrom = process.env.EMAIL_ACCOUNT_FROM;
 const productPath = process.env.PRODUCT_PATH;
 const server = http.createServer(app);
 
-ioModule.initialize(server, {pingTimeout: 60000});
-const io = ioModule.io();
+const sio = require('socket.io');
+const io = sio(server, {pingTimeout: 60000});
+io.on('connect', socket => {
+    socket.join('users');
+    socket.on('userLoggedIn', () => {
+        socket.leave('users');
+        socket.join('admin');
+    });
+    socket.on('userLoggedOut', () => {
+        socket.leave('admin');
+        socket.join('users');
+    });
+    socket.on('disconnect', () => {
+        socket.leave('admin');
+        socket.leave('users');
+    });
+});
 
 app.use(express.static(path.join(__dirname, 'public')));
 app.use(express.json());
