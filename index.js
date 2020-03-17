@@ -14,7 +14,16 @@ const axios = require('axios');
 const crypto = require('crypto');
 const jwt = require('express-jwt');
 
-const {model, Schema} = require('mongoose');
+const mongoose = require('mongoose');
+mongoose.connect(process.env.MONGODB, {
+    autoCreate: isDevEnv,
+    autoIndex: isDevEnv,
+    useNewUrlParser: true,
+    useUnifiedTopology: true,
+});
+mongoose.Promise = global.Promise;
+
+const {model, Schema} = mongoose;
 const uniqueValidator = require('mongoose-unique-validator');
 const slugify = require('slugify');
 const {possibleOrderStatuses, statusesDescriptions} = require('./utils/getPossibleOrderStatuses');
@@ -23,7 +32,6 @@ const DeliveryMethodSchema = require('./schemas/DeliveryMethodSchema')({Schema, 
 const OrderSchema = require('./schemas/OrderSchema')({Schema, possibleOrderStatuses});
 const ProductSchema = require('./schemas/ProductSchema')({Schema, uniqueValidator, slugify});
 
-const db = require('./db');
 const ioModule = require('./io');
 
 const app = express();
@@ -54,7 +62,7 @@ const deliveryMethodCheckMiddleware = require('./middleware/deliveryMethodCheck'
 const setCreateOrderRequestConfig = require('./middleware/setCreateOrderRequestConfig')({
     createOrderUrl: `${process.env.PAYU_API}/orders`,
     notifyUrl: `${process.env.API_URL}/notify`,
-    getObjectId: () => db.Types.ObjectId().toString(),
+    getObjectId: () => mongoose.Types.ObjectId().toString(),
 });
 
 // utils
@@ -106,7 +114,6 @@ app.use(cors({
     allowedHeaders: ['Content-Type', 'Authorization'],
     credentials: true,
 }));
-app.locals.db = db;
 app.all('/admin/*', jwt({
     secret: process.env.JWT_SECRET,
     audience: process.env.JWT_AUDIENCE,
