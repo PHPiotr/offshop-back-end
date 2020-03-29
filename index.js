@@ -59,7 +59,7 @@ const productsCheckMiddleware = require('./middleware/productsCheck');
 const deliveryMethodCheckMiddleware = require('./middleware/deliveryMethodCheck');
 const setCreateOrderRequestConfig = require('./middleware/setCreateOrderRequestConfig')({
     createOrderUrl: `${process.env.PAYU_API}/orders`,
-    notifyUrl: `${process.env.API_URL}/notify`,
+    notifyUrl: `${process.env.API_URL}/orders/notify`,
     getObjectId: () => mongoose.Types.ObjectId().toString(),
 });
 
