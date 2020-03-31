@@ -85,9 +85,14 @@ module.exports = (config) => {
             const product = await new ProductModel(req.body).save();
             const {id, active} = product;
 
-            const uploadedImagesData = await processUpload(req.files.img.data, id);
-            Object.assign(product, {images: [uploadedImagesData]});
-            await product.save();
+            try {
+                const uploadedImagesData = await processUpload(req.files.img.data, id);
+                Object.assign(product, {images: [uploadedImagesData]});
+                await product.save();
+            } catch (e) {
+                await ProductModel.deleteOne({ _id: product._id });
+                throw e;
+            }
 
             io.to('admin').emit('adminCreateProduct', {product, isActive: active});
             io.to('users').emit('createProduct', {product, isActive: active});
