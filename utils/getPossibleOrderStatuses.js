@@ -12,7 +12,7 @@ const possibleStatusesLabels = {
     REJECTED: 'odrzucona',
 };
 const statusesDescriptions = {
-    PENDING: 'Czekamy na potwierdzenie z banku, że dokonałeś płatności.',
+    PENDING: 'Czekamy na potwierdzenie z banku, że płatność została zrealizowana.',
     WAITING_FOR_CONFIRMATION: 'Wpłacone przez Ciebie środki zostały przekazane do dyspozycji sklepu. Skontaktuj się z nim, aby poznać status swojego zamówienia.',
     COMPLETED: 'Wpłacone przez Ciebie środki zostały przekazane do sklepu.',
 };
