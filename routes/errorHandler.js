@@ -23,10 +23,14 @@ module.exports = isDevEnv => (err, req, res, next) => {
     const payload = {
         message: `Don't panic! It's just ${statusCode} Error. We will fix it soon.`,
         status: statusCode,
-        error: err,
     };
+
+    if (statusCode === 404) {
+        payload.message = 'Not found';
+    }
+
     if (isDevEnv) {
-        payload.message = err.message || res.errorMessage || err.toString();
+        payload.error = err;
     }
 
     res.json(payload);
