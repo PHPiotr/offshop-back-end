@@ -50,12 +50,12 @@ module.exports = (config) => {
 
     router.put('/:deliveryMethodId', async (req, res, next) => {
         try {
-            const {params: {deliveryMethodId}, body: {name, slug, unitPrice}} = req;
+            const {params: {deliveryMethodId}, body: {name, slug, step, stepPrice, unitPrice}} = req;
             const deliveryMethod = await DeliveryMethodModel.findById(deliveryMethodId).exec();
             if (!deliveryMethod) {
                 return res.sendStatus(404);
             }
-            Object.assign(deliveryMethod, {name, slug, unitPrice});
+            Object.assign(deliveryMethod, {name, slug, step, stepPrice, unitPrice});
             await deliveryMethod.save();
             io.to('admin').emit('adminUpdateDelivery', {deliveryMethod});
             io.to('users').emit('updateDelivery', {deliveryMethod});

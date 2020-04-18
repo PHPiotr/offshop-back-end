@@ -14,6 +14,12 @@ const getDeliveryMethodSchema = ({Schema, slugify}) => {
         unitPrice: {
             type: Number,
         },
+        stepPrice: {
+            type: Number,
+        },
+        step: {
+            type: Number,
+        },
         active: {
             type: Boolean,
             default: true,
@@ -24,6 +30,9 @@ const getDeliveryMethodSchema = ({Schema, slugify}) => {
 
     DeliveryMethodSchema.pre('validate', async function() {
         this.slug = slugify(this.name, {lower: true});
+        if (this.step) {
+            this.step = Number(this.step);
+        }
     });
 
     DeliveryMethodSchema.set('toJSON', {
@@ -31,6 +40,8 @@ const getDeliveryMethodSchema = ({Schema, slugify}) => {
         versionKey: false,
         transform: function(doc, ret) {
             ret.unitPrice = '' + ret.unitPrice;
+            ret.stepPrice = ret.stepPrice ? '' + ret.stepPrice : '';
+            ret.step = ret.step ? Number(ret.step) : '';
             delete ret._id;
         },
     });
