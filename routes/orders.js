@@ -114,16 +114,36 @@ module.exports = (config) => {
         async (req, res, next) => {
             try {
                 const {extOrderId} = req.createOrderRequestConfig.data;
+                const isPayAfterDelivery = req.body.deliveryMethod.payAfterDelivery;
 
                 // 1. Store order locally (status: LOCAL_NEW_INITIATED)
                 let localOrder = await OrderModel.findOneAndUpdate(
                     {extOrderId},
                     {$set: Object.assign(req.body, req.createOrderRequestConfig.data, {
-                        status: 'LOCAL_NEW_INITIATED',
+                        status: isPayAfterDelivery ? 'PAY_AFTER_DELIVERY' : 'LOCAL_NEW_INITIATED',
                         orderId: extOrderId,
                     })},
                     {upsert: true, new: true, runValidators: true, setDefaultsOnInsert: true}
                 ).exec();
+
+                if (isPayAfterDelivery) {
+                    io.to('admin').emit('adminCreateOrder', {order: localOrder});
+                    const {email, firstName, lastName} = localOrder.buyer || {};
+                    if (email && firstName && lastName) {
+                        await sendMail(
+                            'order',
+                            Object.assign(localOrder, {
+                                productPath,
+                                statusDescription: statusesDescriptions[localOrder.status],
+                            }),
+                            emailFrom,
+                            `${firstName} ${lastName} <${email}>`);
+                    }
+                    return res.json({
+                        extOrderId,
+                        redirectUri: null,
+                    });
+                }
 
                 // 2. Send createOrderRequest to PayU
                 let updateAfterCreateOrderRequest;

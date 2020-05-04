@@ -36,8 +36,8 @@ module.exports = (config) => {
 
     router.post('/', async (req, res, next) => {
         try {
-            const {name, slug, unitPrice} = req.body;
-            const deliveryMethod = await new DeliveryMethodModel({name, slug, unitPrice}).save();
+            const {name, slug, unitPrice, payAfterDelivery} = req.body;
+            const deliveryMethod = await new DeliveryMethodModel({name, slug, unitPrice, payAfterDelivery}).save();
 
             io.to('admin').emit('adminCreateDelivery', {deliveryMethod});
             io.to('users').emit('createDelivery', {deliveryMethod});
@@ -50,12 +50,12 @@ module.exports = (config) => {
 
     router.put('/:deliveryMethodId', async (req, res, next) => {
         try {
-            const {params: {deliveryMethodId}, body: {name, slug, step, stepPrice, unitPrice}} = req;
+            const {params: {deliveryMethodId}, body: {name, slug, step, stepPrice, unitPrice, payAfterDelivery}} = req;
             const deliveryMethod = await DeliveryMethodModel.findById(deliveryMethodId).exec();
             if (!deliveryMethod) {
                 return res.sendStatus(404);
             }
-            Object.assign(deliveryMethod, {name, slug, step, stepPrice, unitPrice});
+            Object.assign(deliveryMethod, {name, slug, step, stepPrice, unitPrice, payAfterDelivery});
             await deliveryMethod.save();
             io.to('admin').emit('adminUpdateDelivery', {deliveryMethod});
             io.to('users').emit('updateDelivery', {deliveryMethod});

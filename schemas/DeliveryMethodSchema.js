@@ -24,6 +24,10 @@ const getDeliveryMethodSchema = ({Schema, slugify}) => {
             type: Boolean,
             default: true,
         },
+        payAfterDelivery: {
+            type: Boolean,
+            default: false,
+        }
     }, {
         timestamps: true,
     });
