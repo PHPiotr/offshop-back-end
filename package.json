@@ -4,8 +4,8 @@
   "description": "",
   "main": "index.js",
   "engines": {
-    "node": "12.1.0",
-    "npm": "6.9.0"
+    "node": "14.3.0",
+    "npm": "6.14.2"
   },
   "dependencies": {
     "aws-sdk": "^2.763.0",
