@@ -1,0 +1,29 @@
+version: "3.8"
+services:
+  offshop:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - 9000:9000
+    restart: unless-stopped
+    tty: true
+    working_dir: /app/
+    volumes:
+      - ../:/app
+    networks:
+      - offshop
+
+  db:
+    image: mongo
+    restart: always
+    ports:
+      - 8081:8081
+    networks:
+      - offshop
+    volumes:
+      - ./mongo/data/db:/data/db
+
+networks:
+  offshop:
+    driver: bridge
