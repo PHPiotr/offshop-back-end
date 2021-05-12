@@ -20,7 +20,7 @@
     "mongodb": "^3.6.2",
     "mongoose": "^5.10.7",
     "mongoose-unique-validator": "^2.0.3",
-    "nodemailer": "^6.4.11",
+    "nodemailer": "^6.4.16",
     "pug": "^3.0.1",
     "request": "^2.88.2",
     "serverless-offline": "^6.8.0",
